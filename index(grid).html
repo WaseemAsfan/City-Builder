@@ -277,18 +277,100 @@ void main() {
 
     // Mouse and keyboard interactions
     let mouseDown = false, lastX, lastY, cubeRotX = 10 * Math.PI/180, cubeRotY = 0; //
-    let camX = 0, camY = -0.72, camZ = -2;
+    let camX = 0, camY = -0.72, camZ = -20;
     let offsetx = 0, offsety = -0.5, offsetz = -2;
+    let count = -1;
+    
+    let checkForSelection = false;
+    let selecting = "none";
+    let currentModelViewMatrix, currentModelTransformationMatrix, currentProjectionMatrix;
+
+    const unselectedTex = initTexture("textures/tile_blank.png");
+    const selectedTex = initTexture("textures/tile_selected.png");
+    const hoveredTex = initTexture("textures/tile_hover.png");
+    const selectedHoveredTex = initTexture("textures/tile_selected_hover.png");
+    const eraseTex = initTexture("textures/tile_erase.png");
+    const selectedEraseTex = initTexture("textures/tile_selected_erase.png");
+    const blankBumpTex = initTexture("textures/white.jpg")
+    let gridSize = 10;
+    let gridRow=gridSize-1; gridCol=gridSize-1;
+    let grid = [];
+    for(let j=0; j<gridSize; j++){
+      grid[j] = [];
+      for(let k=0; k<gridSize; k++){
+        //if(k%2==0 && j%2==0) { grid[j][k]=addTile(makePrism(1.0, 0.1, 1.0, 1.0, 1.0, 1.0), unselectedTex, blankBumpTex, makeMaterial(1.0, 0.0, 0.0, 5), 0); }
+        //else if(k%2==0) { grid[j][k]=addTile(makePrism(1.0, 0.1, 1.0, 1.0, 1.0, 1.0), selectedTex, blankBumpTex, makeMaterial(1.0, 0.0, 0.0, 5), 0); }
+        //else if(j%2==0) { grid[j][k]=addTile(makePrism(1.0, 0.1, 1.0, 1.0, 1.0, 1.0), hoveredTex, blankBumpTex, makeMaterial(1.0, 0.0, 0.0, 5), 0); }
+        //else { grid[j][k]=addTile(makePrism(1.0, 0.1, 1.0, 1.0, 1.0, 1.0), selectedHoveredTex, blankBumpTex, makeMaterial(1.0, 0.0, 0.0, 5), 0); }
+        grid[j][k] = addTile(makePrism(1.0, 0.1, 1.0, 1.0, 1.0, 1.0), unselectedTex, blankBumpTex, makeMaterial(1.0, 0.0, 0.0, 5), 0);
+        grid[j][k].isSelected = false;
+        grid[j][k].hasBuilding = false;
+      }
+    }
 
     canvas.addEventListener('mousedown', e => { mouseDown = true; lastX = e.clientX; lastY = e.clientY; });
     canvas.addEventListener('mouseup', () => mouseDown = false);
     canvas.addEventListener('mousemove', e => {
-      if (!mouseDown) return;
-      let dx = e.clientX - lastX;
-      let dy = e.clientY - lastY;
-      cubeRotY += dx * 0.01;
-      cubeRotX += dy * 0.01;
-      lastX = e.clientX; lastY = e.clientY;
+      if (mouseDown){
+        let dx = e.clientX - lastX;
+        let dy = e.clientY - lastY;
+        cubeRotY += dx * 0.01;
+        cubeRotX += dy * 0.01;
+        lastX = e.clientX; lastY = e.clientY;
+      }
+      if(checkForSelection){
+        let ndcX = (e.clientX / canvas.width) * 2 - 1;
+        let ndcY = -((e.clientY / canvas.height) * 2 - 1);
+        console.log("1. NDC coordinates:", ndcX, ndcY);
+
+        let combinedMatrix = multiplyMat4(multiplyMat4(currentProjectionMatrix, currentModelViewMatrix), currentModelTransformationMatrix);
+        let inverseMatrix = mat4Invert(combinedMatrix);
+        console.log("2. Inverse matrix computed:", inverseMatrix);
+
+        let nearPoint = [ndcX, ndcY, -1, 1];
+        let farPoint = [ndcX, ndcY, 1, 1];
+
+        let nearPlane = multiplyMatVec4(inverseMatrix, nearPoint);
+        let farPlane = multiplyMatVec4(inverseMatrix, farPoint);
+
+        nearPlane = convertToCartesian(nearPlane);
+        farPlane = convertToCartesian(farPlane);
+        console.log("3. After perspective divide - nearPlane:", nearPlane);
+        console.log("3. After perspective divide - farPlane:", farPlane);
+
+        let rayOrigin = nearPlane;
+        let rayDirection = [farPlane[0] = nearPlane[0], farPlane[1]-nearPlane[1], farPlane[2]-nearPlane[2]]
+        rayDirection = normalize(rayDirection);
+
+        if(Math.abs(rayDirection[1]) > 0.0001){
+          console.log(`Ray Not Parallel`);
+          let t = -rayOrigin[1] / rayDirection[1];
+          if(t>=0){
+            let intersectX = rayOrigin[0] + t*rayDirection[0];
+            let intersectZ = rayOrigin[2] + t*rayDirection[2];
+            console.log(`World intersection point: (${intersectX}, 0, ${intersectZ})`);
+
+            let invModelTransform = mat4Invert(currentModelTransformationMatrix);
+            let localIntersection = multiplyMatVec4(invModelTransform, [intersectX, 0.0, intersectZ, 1.0]);
+            localIntersection = convertToCartesian(localIntersection);
+
+            let j = Math.round(gridSize/2 - localIntersection[0]);
+            let k = Math.round(gridSize/2 - localIntersection[2]);
+            console.log(`Grid indices: [${j}, ${k}]`);
+
+            if(j>=0 && j<gridSize && k>=0 && k<gridSize){
+              console.log(`✓ Valid selection: grid[${j}][${k}]`);
+              grid[j][k].texture = selectedTex;
+            } else{
+              console.log(`✗ Click outside grid bounds`);
+            }
+          } else{
+            console.log(`✗ Intersection behind camera (t = ${t})`);
+          }
+        } else{
+          console.log(`✗ Ray is parallel to ground plane`);
+        }
+      }
     });
 
     document.addEventListener('keydown', e => {
@@ -300,6 +382,52 @@ void main() {
         case 'ArrowRight': camX -= step; break;
         case 'w': camZ += step; break;
         case 's': camZ -= step; break;
+        //case ' ': checkForSelection = true; break;
+        case ' ': selecting = "selecting"; grid[gridRow][gridCol].isSelected = true; break;
+        case 'm': selecting = "erasing"; grid[gridRow][gridCol].isSelected = false; break;
+        case 'k': if(gridCol-1 >= 0){
+          gridCol--;
+          if(selecting == "selecting"){
+            grid[gridRow][gridCol].isSelected = true;
+          }
+          if(selecting == "erasing"){
+            grid[gridRow][gridCol].isSelected = false;
+          } 
+        } break;
+        case 'i': if(gridCol+1 < gridSize){
+          gridCol++;
+          if(selecting == "selecting"){
+            grid[gridRow][gridCol].isSelected = true;
+          }
+          if(selecting == "erasing"){
+            grid[gridRow][gridCol].isSelected = false;
+          }
+        } break;
+        case 'l': if(gridRow-1 >= 0){
+          gridRow--; 
+          if(selecting == "selecting"){
+            grid[gridRow][gridCol].isSelected = true;
+          }
+          if(selecting == "erasing"){
+            grid[gridRow][gridCol].isSelected = false;
+          }
+        } break;
+        case 'j': if(gridRow+1 < gridSize){
+          gridRow++;
+          if(selecting == "selecting"){
+            grid[gridRow][gridCol].isSelected = true;
+          }
+          if(selecting == "erasing"){
+            grid[gridRow][gridCol].isSelected = false;
+          }
+        } break;
+      }
+    });
+    document.addEventListener('keyup', e => {
+      switch (e.key) {
+        //case ' ': checkForSelection = false; break;
+        case ' ': selecting = "none"; break;
+        case 'm': selecting = "none"; break;
       }
     });
 
@@ -312,7 +440,6 @@ void main() {
 
     let startTime = Date.now();
 
-    let count = -1;
     function addGeometry(shape, texUrl, bumpUrl, material, bumpStrength){
       let buffs = initBuffers(shape);
       let texture = initTexture(texUrl);
@@ -333,6 +460,25 @@ void main() {
         textcount : count
       };
     }
+    function addTile(shape, texture, bumpTexture, material, bumpStrength){
+      let buffs = initBuffers(shape);
+      count ++;
+      return{
+        posbuff : buffs.posbuff,
+        colbuff : buffs.colbuff,
+        indbuff : buffs.indbuff,
+        texbuff : buffs.texbuff,
+        normbuff : buffs.normbuff,
+        transformations : mat4Identity(),
+        indicelen : shape.indices.length,
+        texture : texture,
+        bumpTexture : bumpTexture,
+        material : material,
+        bumpStrength : bumpStrength,
+        textcount : count
+      };
+    }
+    
     function makeMaterial(a,d,s,alph){
       return{
       ka: a,    // Ambient
@@ -418,13 +564,13 @@ void main() {
       gl.uniform1f(uAlphaLoc, shapeGeometry.material.alpha);
       gl.uniform1f(uBumpStrengthLoc, shapeGeometry.bumpStrength);
 
-      gl.activeTexture(gl.TEXTURE0 + i); //unit is 0, 1, 2 ...
+      gl.activeTexture(gl.TEXTURE0 + (i % 30)); //unit is 0, 1, 2 ...
       gl.bindTexture(gl.TEXTURE_2D, shapeGeometry.texture);
-      gl.uniform1i(uTexLoc,0 + i);
+      gl.uniform1i(uTexLoc,0 + (i % 30));
 
-      gl.activeTexture(gl.TEXTURE1 + i);
+      gl.activeTexture(gl.TEXTURE1 + (i % 30));
       gl.bindTexture(gl.TEXTURE_2D, shapeGeometry.bumpTexture);
-      gl.uniform1i(uBumpTexLoc, 1+i);
+      gl.uniform1i(uBumpTexLoc, 1+(i % 30));
 
       gl.bindBuffer(gl.ARRAY_BUFFER, shapeGeometry.texbuff);
       gl.enableVertexAttribArray(texCoordLoc);
@@ -447,6 +593,89 @@ void main() {
       gl.drawElements(gl.TRIANGLES, shapeGeometry.indicelen, gl.UNSIGNED_SHORT, 0);
     }
 
+    function mat4Invert(m){
+      const inv = new Float32Array(16);
+        // Calculate all 2x2 subdeterminants and build the adjugate matrix
+      inv[0] = m[5]*m[10]*m[15] - m[5]*m[11]*m[14] - m[9]*m[6]*m[15] + 
+              m[9]*m[7]*m[14] + m[13]*m[6]*m[11] - m[13]*m[7]*m[10];
+      
+      inv[4] = -m[4]*m[10]*m[15] + m[4]*m[11]*m[14] + m[8]*m[6]*m[15] - 
+                m[8]*m[7]*m[14] - m[12]*m[6]*m[11] + m[12]*m[7]*m[10];
+      
+      inv[8] = m[4]*m[9]*m[15] - m[4]*m[11]*m[13] - m[8]*m[5]*m[15] + 
+              m[8]*m[7]*m[13] + m[12]*m[5]*m[11] - m[12]*m[7]*m[9];
+      
+      inv[12] = -m[4]*m[9]*m[14] + m[4]*m[10]*m[13] + m[8]*m[5]*m[14] - 
+                m[8]*m[6]*m[13] - m[12]*m[5]*m[10] + m[12]*m[6]*m[9];
+      
+      inv[1] = -m[1]*m[10]*m[15] + m[1]*m[11]*m[14] + m[9]*m[2]*m[15] - 
+                m[9]*m[3]*m[14] - m[13]*m[2]*m[11] + m[13]*m[3]*m[10];
+      
+      inv[5] = m[0]*m[10]*m[15] - m[0]*m[11]*m[14] - m[8]*m[2]*m[15] + 
+              m[8]*m[3]*m[14] + m[12]*m[2]*m[11] - m[12]*m[3]*m[10];
+      
+      inv[9] = -m[0]*m[9]*m[15] + m[0]*m[11]*m[13] + m[8]*m[1]*m[15] - 
+                m[8]*m[3]*m[13] - m[12]*m[1]*m[11] + m[12]*m[3]*m[9];
+      
+      inv[13] = m[0]*m[9]*m[14] - m[0]*m[10]*m[13] - m[8]*m[1]*m[14] + 
+                m[8]*m[2]*m[13] + m[12]*m[1]*m[10] - m[12]*m[2]*m[9];
+      
+      inv[2] = m[1]*m[6]*m[15] - m[1]*m[7]*m[14] - m[5]*m[2]*m[15] + 
+              m[5]*m[3]*m[14] + m[13]*m[2]*m[7] - m[13]*m[3]*m[6];
+      
+      inv[6] = -m[0]*m[6]*m[15] + m[0]*m[7]*m[14] + m[4]*m[2]*m[15] - 
+                m[4]*m[3]*m[14] - m[12]*m[2]*m[7] + m[12]*m[3]*m[6];
+      
+      inv[10] = m[0]*m[5]*m[15] - m[0]*m[7]*m[13] - m[4]*m[1]*m[15] + 
+                m[4]*m[3]*m[13] + m[12]*m[1]*m[7] - m[12]*m[3]*m[5];
+      
+      inv[14] = -m[0]*m[5]*m[14] + m[0]*m[6]*m[13] + m[4]*m[1]*m[14] - 
+                m[4]*m[2]*m[13] - m[12]*m[1]*m[6] + m[12]*m[2]*m[5];
+      
+      inv[3] = -m[1]*m[6]*m[11] + m[1]*m[7]*m[10] + m[5]*m[2]*m[11] - 
+                m[5]*m[3]*m[10] - m[9]*m[2]*m[7] + m[9]*m[3]*m[6];
+      
+      inv[7] = m[0]*m[6]*m[11] - m[0]*m[7]*m[10] - m[4]*m[2]*m[11] + 
+              m[4]*m[3]*m[10] + m[8]*m[2]*m[7] - m[8]*m[3]*m[6];
+      
+      inv[11] = -m[0]*m[5]*m[11] + m[0]*m[7]*m[9] + m[4]*m[1]*m[11] - 
+                m[4]*m[3]*m[9] - m[8]*m[1]*m[7] + m[8]*m[3]*m[5];
+      
+      inv[15] = m[0]*m[5]*m[10] - m[0]*m[6]*m[9] - m[4]*m[1]*m[10] + 
+                m[4]*m[2]*m[9] + m[8]*m[1]*m[6] - m[8]*m[2]*m[5];
+
+      let det = m[0]*inv[0] + m[1]*inv[4] + m[2]*inv[8] + m[3]*inv[12];   
+
+      det = 1.0 / det;
+      for (let i = 0; i < 16; i++) {
+          inv[i] = inv[i] * det;
+      }
+      
+      return inv;
+    }
+
+    function multiplyMatVec4(a, b){
+      let r = new Float32Array(4);
+      for(let i = 0; i<4; i++){
+        r[i] = a[i] * b[0] + 
+              a[i+4] * b[1] +
+              a[i+8] * b[2] +
+              a[i+12] * b[3];
+      }
+      return r;
+    }
+
+    function convertToCartesian(a){
+      let r = [a[0] / a[3],
+              a[1] / a[3],
+              a[2] / a[3]];
+      return r;
+    }
+
+    function normalize(vec){
+      let length = Math.sqrt(vec[0]*vec[0] + vec[1]*vec[1] + vec[2]*vec[2]);
+      return [vec[0]/length, vec[1]/length, vec[2]/length];
+    }
 
     function render() {
       
@@ -478,7 +707,10 @@ void main() {
       modelViewMatrix = mat4Translate(modelViewMatrix, [camX, camY, camZ]);
       modelViewMatrix = multiplyMat4(modelViewMatrix, cubeRotation);
       
-      
+      currentModelTransformationMatrix = modelTransformationMatrix;
+      currentModelViewMatrix = modelViewMatrix;
+      currentProjectionMatrix = proj;
+
       //set time in seconds
       gl.uniform1f(timeLoc, deltaTime/1000.0);
       gl.uniformMatrix4fv(uPM, false, proj);
@@ -490,8 +722,26 @@ void main() {
       gl.uniform3fv(uLightBPosLoc, [-10,10,-10]);
       gl.uniform3fv(uViewPosLoc, [0.0, 0.0, 0.0]);
       
+      
+      for(let j=0; j<gridSize; j++){
+        for(let k=0; k<gridSize; k++){
+          if(j==gridRow && k==gridCol){
+            if(selecting == "erasing"){
+              if(grid[j][k].isSelected) grid[j][k].texture = selectedEraseTex;
+              else grid[j][k].texture = eraseTex;
+            }
+            else{
+              if(grid[j][k].isSelected) grid[j][k].texture = selectedHoveredTex;
+              else grid[j][k].texture = hoveredTex;
+            }
+          }
+          else if(grid[j][k].isSelected) grid[j][k].texture = selectedTex; 
+          else grid[j][k].texture = unselectedTex;
+          grid[j][k].transformations = multiplyMat4(modelTransformationMatrix, mat4Translate(mat4Identity(), [Math.floor(gridSize/2) - j, 0.0, Math.floor(gridSize/2) - k]));
+          drawStrayFunc(gl, grid[j][k]);
+        }
+      }
     }
-
     // Initialize when page loads
     window.onload = function () {
       setInterval(render, 30);
