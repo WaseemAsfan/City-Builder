@@ -277,6 +277,7 @@ function createbuilding1Model() {
     addChild(buildingBase, bush1);
     addChild(buildingBase, bush2);
     
+    buildingBase.translation = [0,1,0];
     return buildingBase;
 }
 
@@ -421,6 +422,7 @@ function createbuilding2Model() {
     addChild(buildingBase, vent);
     addChild(buildingBase, ac);
     
+    buildingBase.translation = [0,1,0];
     return buildingBase;
 }
 
@@ -501,7 +503,7 @@ function createbuilding3Model() {
     addChild(buildingBase, bush1);
     addChild(buildingBase, bush2);
     
-    buildingBase.translation = [0,-0.5,0];
+    buildingBase.translation = [0,0.5,0];
     return buildingBase;
 }
 
@@ -596,7 +598,7 @@ function createbuilding4Model() {
     addChild(buildingBase, vent);
     addChild(buildingBase, sign);
     
-    buildingBase.translation = [0,-0.5,0];
+    buildingBase.translation = [0.5,0.5,0];
     return buildingBase;
 }
 function makeWindow(){
@@ -712,4 +714,26 @@ function createRoad(){
     addChild(road, right);
     addChild(road, left);
     return road
+}
+
+function moveBuilding(building,type, row, col, rotation){
+    building.rotation[1] = -rotation * 90 * Math.PI / 180;
+
+    if(type == 4){
+        if(rotation == 1){
+            building.translation[2] = 0.5;
+            building.translation[0] = 0;
+        }
+        else if(rotation == 2){
+            building.translation[0] = -0.5;
+            
+        }
+        else if(rotation == 3){
+            building.translation[2] = -0.5;
+            building.translation[0] = 0;
+        }
+    }
+    building.translation[0] += row;
+    building.translation[2] += col;
+    
 }

@@ -108,9 +108,10 @@ noisy colors but the donut texture is nice in my opinion).-->
   <div style="display: flex; gap: 30px; align-items: center;">
     <!-- Left Buttons -->
     <div class="button-panel">
+      <button id = "strtBtn" class="btn btn-success btn-lg">Start Game</button>
       <button class="btn btn-primary btn-lg">Load City</button>
-      <button class="btn btn-success btn-lg">Start Game</button>
       <button class="btn btn-danger btn-lg">Reset</button>
+      <button class="btn btn-dark btn-lg">Reset Camera</button>
     </div>
 
     <!-- Canvas -->
@@ -120,12 +121,15 @@ noisy colors but the donut texture is nice in my opinion).-->
 
     <!-- Right Buttons -->
     <div class="button-panel">
+      <button class="btn btn-info btn-lg">Unload City</button>
       <button class="btn btn-warning btn-lg">Draw</button>
       <button class="btn btn-secondary btn-lg">Erase</button>
     </div>
   </div>
 
   <!-- Vertex shader -->
+<textarea id="vertEditor"></textarea>
+<textarea id="fragEditor"></textarea>
 <script id="vertex-shader" type="x-shader/x-vertex">#version 300 es
 in vec3 aPosition;
 in vec3 aColor;
@@ -154,7 +158,6 @@ void main() {
   vNormal = normalize(uNormalMatrix * aNormal);
 }
 </script>
-
 <!-- Fragment Shader -->
 <script id="fragment-shader" type="x-shader/x-fragment">#version 300 es
 precision mediump float;
@@ -223,46 +226,6 @@ void main() {
   fragColor = vec4(finalColor, texColor.a);
 }
 </script>
-<script>
-  const canvas = document.getElementById("glcanvas");
-  const drawBtn = document.querySelector('.btn-warning');
-  const eraseBtn = document.querySelector('.btn-secondary');
-  
-  let currentMode = 'none'; // 'none', 'draw', or 'erase'
-
-  // Draw button click handler
-  drawBtn.addEventListener('click', function() {
-    if (currentMode === 'draw') {
-      // If already in draw mode, turn it off
-      currentMode = 'none';
-      canvas.style.cursor = 'default';
-      drawBtn.classList.remove('active');
-    } else {
-      // Switch to draw mode
-      currentMode = 'draw';
-      canvas.style.cursor = 'url("textures/pencil-icon.png"), auto';
-      drawBtn.classList.add('active');
-      eraseBtn.classList.remove('active');
-    }
-  });
-
-  // Erase button click handler
-  eraseBtn.addEventListener('click', function() {
-    if (currentMode === 'erase') {
-      // If already in erase mode, turn it off
-      currentMode = 'none';
-      canvas.style.cursor = 'default';
-      eraseBtn.classList.remove('active');
-    } else {
-      // Switch to erase mode
-      currentMode = 'erase';
-      canvas.style.cursor = 'url("textures/erase-icon.png"), auto';
-      eraseBtn.classList.add('active');
-      drawBtn.classList.remove('active');
-    }
-  });
-</script>
-
   <script src="primitives.js"></script>
   <script src="transformations.js"></script>
   <script src="building.js"></script>
@@ -395,9 +358,115 @@ void main() {
     vertEditor.onkeyup = initShaderProgram;
     fragEditor.onkeyup = initShaderProgram;
 
+    let count = -1;
+    let checkForSelection = false;
+    let selecting = "none";
+    // let currentModelViewMatrix, currentModelTransformationMatrix, currentProjectionMatrix;
+
+    const unselectedTex = initTexture("textures/tile_blank.png");
+    const selectedTex = initTexture("textures/tile_selected.png");
+    const hoveredTex = initTexture("textures/tile_hover.png");
+    const selectedHoveredTex = initTexture("textures/tile_selected_hover.png");
+    const eraseTex = initTexture("textures/tile_erase.png");
+    const selectedEraseTex = initTexture("textures/tile_selected_erase.png");
+    const blankBumpTex = initTexture("textures/white.jpg")
+    let gridSize = 10;
+    let gridRow=gridSize-1; gridCol=gridSize-1;
+    let grid = [];
+    let city = [];
+    for(let j=0; j<gridSize; j++){
+      grid[j] = [];
+      for(let k=0; k<gridSize; k++){
+        grid[j][k] = addTile(makePrism(1.0, 0.1, 1.0, 1.0, 1.0, 1.0), unselectedTex, blankBumpTex, makeMaterial(1.0, 0.0, 0.0, 5), 0);
+        grid[j][k].isSelected = false;
+        grid[j][k].hasBuilding = false;
+      }
+    }
+    
+    const drawBtn = document.querySelector('.btn-warning');
+    const eraseBtn = document.querySelector('.btn-secondary');
+    const resetBtn = document.querySelector('.btn-danger');
+    const loadBtn = document.querySelector('.btn-primary');
+    const startBtn = document.querySelector(".btn-success");
+    const unloadBtn = document.querySelector(".btn-info");
+    const camBtn = document.querySelector(".btn-dark");
+
+    startBtn.style.display = "none";
+    camBtn.style.display = "none";
+    unloadBtn.style.display = "none";
+
+    let currentMode = 'none'; // 'none', 'draw', or 'erase'
+
+    
+    drawBtn.addEventListener('click', function() {
+      if (currentMode === 'draw') {
+        // If already in draw mode, turn it off
+        currentMode = 'none';
+        drawBtn.classList.remove('active');
+        selecting = "none";
+      } else {
+        // Switch to draw mode
+        currentMode = 'draw';
+        drawBtn.classList.add('active');
+        eraseBtn.classList.remove('active');
+        grid[gridRow][gridCol].isSelected = true;
+        selecting = "selecting";
+      }
+    });
+   
+    eraseBtn.addEventListener('click', function() {
+      if (currentMode === 'erase') {
+        // If already in erase mode, turn it off
+        currentMode = 'none';
+        eraseBtn.classList.remove('active');
+        selecting = "none";
+      } else {
+        // Switch to erase mode
+        currentMode = 'erase';
+        eraseBtn.classList.add('active');
+        drawBtn.classList.remove('active');
+        grid[gridRow][gridCol].isSelected = false;
+        selecting = "erasing";
+      }
+    });
+
+    resetBtn.addEventListener('click', function() {
+      currentMode = 'none';
+      selecting = 'none';
+      gridRow=gridSize-1; 
+      gridCol=gridSize-1;
+      eraseBtn.classList.remove('active');
+      drawBtn.classList.remove('active');
+      resetGrid();
+    });
+    
+    loadBtn.addEventListener('click', function(){
+      loadCity();
+      startBtn.style.display = "block";
+      unloadBtn.style.display = "block";
+
+      eraseBtn.style.display = "none";
+      drawBtn.style.display = "none";
+      loadBtn.style.display = "none";
+      resetBtn.style.display = "none";
+    
+    });
+
+    unloadBtn.addEventListener('click', function(){
+      resetCity();
+      startBtn.style.display = "none";
+      unloadBtn.style.display = "none";
+
+      eraseBtn.style.display = "block";
+      drawBtn.style.display = "block";
+      loadBtn.style.display = "block";
+      resetBtn.style.display = "block";
+
+    });
+    
     // Mouse and keyboard interactions
     let mouseDown = false, lastX, lastY, cubeRotX = 10 * Math.PI/180, cubeRotY = 0; //
-    let camX = 0, camY = 0, camZ = -7;
+    let camX = 0, camY = -0.72, camZ = -20;
     let offsetx = 0, offsety = -0.5, offsetz = -2;
 
     canvas.addEventListener('mousedown', e => { mouseDown = true; lastX = e.clientX; lastY = e.clientY; });
@@ -420,9 +489,55 @@ void main() {
         case 'ArrowRight': camX -= step; break;
         case 'w': camZ += step; break;
         case 's': camZ -= step; break;
+        case 'k': if(gridCol-1 >= 0){
+          gridCol--;
+          if(selecting == "selecting"){
+            grid[gridRow][gridCol].isSelected = true;
+          }
+          if(selecting == "erasing"){
+            grid[gridRow][gridCol].isSelected = false;
+          } 
+        } break;
+        case 'i': if(gridCol+1 < gridSize){
+          gridCol++;
+          if(selecting == "selecting"){
+            grid[gridRow][gridCol].isSelected = true;
+          }
+          if(selecting == "erasing"){
+            grid[gridRow][gridCol].isSelected = false;
+          }
+        } break;
+        case 'l': if(gridRow-1 >= 0){
+          gridRow--; 
+          if(selecting == "selecting"){
+            grid[gridRow][gridCol].isSelected = true;
+          }
+          if(selecting == "erasing"){
+            grid[gridRow][gridCol].isSelected = false;
+          }
+        } break;
+        case 'j': if(gridRow+1 < gridSize){
+          gridRow++;
+          if(selecting == "selecting"){
+            grid[gridRow][gridCol].isSelected = true;
+          }
+          if(selecting == "erasing"){
+            grid[gridRow][gridCol].isSelected = false;
+          }
+        } break;
       }
     });
 
+    function resetGrid(){
+      for(let i =0; i < gridSize; i ++){
+        for(let j = 0; j < gridSize; j++){
+          grid[i][j].isSelected = false;
+          grid[i][j].hasBuilding = false;
+          grid[i][j].texture = unselectedTex;
+        }
+      }
+    }
+    
 
     let fov = Math.PI / 4, aspect = canvas.width / canvas.height, zNear = 0.1, zFar = 100;
     let f = 1 / Math.tan(fov / 2);
@@ -432,7 +547,7 @@ void main() {
 
     let startTime = Date.now();
 
-    let count = -1;
+    
     function addGeometry(shape, texUrl, bumpUrl, material, bumpStrength){
       let buffs = initBuffers(shape);
       let texture = initTexture(texUrl);
@@ -478,6 +593,25 @@ void main() {
     //function to add a child node to a parent node
     function addChild(parent, child) {
       parent.children.push(child);
+    }
+
+    function addTile(shape, texture, bumpTexture, material, bumpStrength){
+      let buffs = initBuffers(shape);
+      count ++;
+      return{
+        posbuff : buffs.posbuff,
+        colbuff : buffs.colbuff,
+        indbuff : buffs.indbuff,
+        texbuff : buffs.texbuff,
+        normbuff : buffs.normbuff,
+        transformations : mat4Identity(),
+        indicelen : shape.indices.length,
+        texture : texture,
+        bumpTexture : bumpTexture,
+        material : material,
+        bumpStrength : bumpStrength,
+        textcount : count
+      };
     }
 
     //DFS structure to go through apply transformations and draw each node
@@ -532,7 +666,7 @@ void main() {
     }
 
     function drawStrayFunc(gl, shapeGeometry){
-      let i = shapeGeometry.textcount;
+      let i = 0 ;
       gl.uniform1f(uKaLoc, shapeGeometry.material.ka);
       gl.uniform1f(uKdLoc, shapeGeometry.material.kd);
       gl.uniform1f(uKsLoc, shapeGeometry.material.ks);
@@ -568,6 +702,137 @@ void main() {
       gl.drawElements(gl.TRIANGLES, shapeGeometry.indicelen, gl.UNSIGNED_SHORT, 0);
     }
 
+    function loadCity(){
+      console.log("loading city");
+      let tmp = Math.floor(gridSize/2);
+      for(let i = 0; i < gridSize; i++){
+        for(let j = 0; j < gridSize; j++){
+          if(grid[i][j].isSelected && !grid[i][j].hasBuilding){
+            let seed = Math.floor(Math.random() * 4) + 1;
+            let rot = Math.floor(Math.random() * 4);
+            if(seed == 1){
+              let building = createbuilding1Model();
+              moveBuilding(building,1, tmp-i, tmp-j, rot);
+              city.push(building);
+              grid[i][j].hasBuilding = true;
+            }
+            else if(seed==2){
+              let building = createbuilding2Model();
+              moveBuilding(building,2, tmp-i, tmp-j, rot);
+              city.push(building);
+              grid[i][j].hasBuilding = true;
+            }
+            else if (seed==3){
+              let building = createbuilding3Model();
+              moveBuilding(building,3, tmp-i, tmp-j, rot);
+              city.push(building);
+              grid[i][j].hasBuilding = true;
+            }
+            else{
+              let placed = false;
+              if(i-1 > -1 && !placed){
+                if(grid[i-1][j].isSelected && !grid[i-1][j].hasBuilding){
+                  let building = createbuilding4Model();
+                  let n = Math.floor(Math.random() * 2) + 1;
+                  if(n == 1){
+                    moveBuilding(building,4, tmp-i+1, tmp-j, 2);
+                  }
+                  else{
+                    moveBuilding(building,4, tmp-i, tmp-j, 0);
+                  }
+                  city.push(building);
+                  grid[i][j].hasBuilding = true;
+                  grid[i-1][j].hasBuilding = true;
+                  placed = true;
+                }
+              }
+              if(j-1 > -1 && !placed){
+                if(grid[i][j-1].isSelected && !grid[i][j-1].hasBuilding){
+                  let building = createbuilding4Model();
+                  let n = Math.floor(Math.random() * 2) + 1;
+                  if(n == 1){
+                    moveBuilding(building,4, tmp-i, tmp-j+1, 3);
+                  }
+                  else{
+                    moveBuilding(building,4, tmp-i, tmp-j, 1);
+                  }
+                  city.push(building);
+                  grid[i][j].hasBuilding = true;
+                  grid[i][j-1].hasBuilding = true;
+                  placed = true;
+                }
+              }
+              if(i+1 <gridSize && !placed){
+                if(grid[i+1][j].isSelected && !grid[i+1][j].hasBuilding){
+                  let building = createbuilding4Model();
+                  let n = Math.floor(Math.random() * 2) + 1;
+                  if(n == 1){
+                    moveBuilding(building,4, tmp-i-1, tmp-j, 0);
+                  }
+                  else{
+                    moveBuilding(building,4, tmp-i, tmp-j, 2);
+                  }
+                  city.push(building);
+                  grid[i][j].hasBuilding = true;
+                  grid[i+1][j].hasBuilding = true;
+                  placed = true;
+                }
+              }
+              if(j+1 < gridSize && !placed){
+                if(grid[i][j+1].isSelected && !grid[i][j+1].hasBuilding){
+                  let building = createbuilding4Model();
+                  let n = Math.floor(Math.random() * 2) + 1;
+                  if(n == 1){
+                    moveBuilding(building,4, tmp-i, tmp-j-1, 1);
+                  }
+                  else{
+                    moveBuilding(building,4, tmp-i, tmp-j, 3);
+                  }
+                  city.push(building);
+                  grid[i][j].hasBuilding = true;
+                  grid[i][j+1].hasBuilding = true;
+                  placed = true;
+                }
+              }
+              if(!placed){
+                let n = Math.floor(Math.random() * 3) + 1;
+                if(n == 1){
+                  let building = createbuilding1Model();
+                  moveBuilding(building,1, tmp-i, tmp-j, rot);
+                  city.push(building);
+                  grid[i][j].hasBuilding = true;
+                  placed = true;
+                }
+                else if(n==2){
+                  let building = createbuilding2Model();
+                  moveBuilding(building,2, tmp-i, tmp-j, rot);
+                  city.push(building);
+                  grid[i][j].hasBuilding = true;
+                  placed = true;
+
+                }
+                else{
+                  let building = createbuilding3Model();
+                  moveBuilding(building,3, tmp-i, tmp-j, rot);
+                  city.push(building);
+                  grid[i][j].hasBuilding = true;
+                  placed = true;
+                }
+              }
+            }
+          }
+        }
+      }
+
+    }
+    function resetCity(){
+      city =[];
+      for(let i = 0; i < gridSize; i++){
+        for(let j = 0; j < gridSize; j++){
+          grid[i][j].hasBuilding = false;
+        }
+      }
+    }
     let cube = addGeometry(makePrism(1,0.1,1,0,0,0), "textures/grid.png", "textures/grid.png", makeMaterial(0.3, 0.7, 0.5, 50), 0);
     
 
@@ -613,16 +878,28 @@ void main() {
       gl.uniform3fv(uLightAPosLoc, [10,10,10]);
       gl.uniform3fv(uLightBPosLoc, [-10,10,-10]);
       gl.uniform3fv(uViewPosLoc, [0.0, 0.0, 0.0]);
-      
-      // drawNode(gl, building1, modelTransformationMatrix);
-      // drawNode(gl, road, modelTransformationMatrix);
-      // drawNode(gl, building2, modelTransformationMatrix);
-      // drawNode(gl, road2, modelTransformationMatrix);
-      // drawNode(gl, building2, modelTransformationMatrix);
-      // drawNode(gl, road3, modelTransformationMatrix);
-      // drawNode(gl, building3, modelTransformationMatrix);
-      // drawNode(gl, road4, modelTransformationMatrix);
-      // drawNode(gl, building4, modelTransformationMatrix);
+
+      for(let j=0; j<gridSize; j++){
+        for(let k=0; k<gridSize; k++){
+          if(j==gridRow && k==gridCol){
+            if(selecting == "erasing"){
+              if(grid[j][k].isSelected) grid[j][k].texture = selectedEraseTex;
+              else grid[j][k].texture = eraseTex;
+            }
+            else{
+              if(grid[j][k].isSelected) grid[j][k].texture = selectedHoveredTex;
+              else grid[j][k].texture = hoveredTex;
+            }
+          }
+          else if(grid[j][k].isSelected) grid[j][k].texture = selectedTex; 
+          else grid[j][k].texture = unselectedTex;
+          grid[j][k].transformations = multiplyMat4(modelTransformationMatrix, mat4Translate(mat4Identity(), [Math.floor(gridSize/2) - j, -0.05, Math.floor(gridSize/2) - k]));
+          drawStrayFunc(gl, grid[j][k]);
+        }
+      }
+      for(let j=0; j < city.length; j++){
+        drawNode(gl, city[j], modelTransformationMatrix);
+      }
     }
 
     // Initialize when page loads
