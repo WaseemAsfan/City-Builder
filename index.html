@@ -488,8 +488,13 @@ void main() {
       camBtn.style.display = "block";
       exitBtn.style.display = "block";
 
-      cubeRotX = 10 * Math.PI/180, cubeRotY = 0;
-      camX = 0, camY = -0.72, camZ = -2;
+      cubeRotX = 5 * Math.PI/180, cubeRotY = 0;
+      camX = 0, camY = -0.35, camZ = -0.7;
+    });
+
+    camBtn.addEventListener('click',function(){
+      cubeRotX = 5 * Math.PI/180, cubeRotY = 0;
+      camX = 0, camY = -0.35, camZ = -0.7;
     });
 
     exitBtn.addEventListener('click', function(){
@@ -501,6 +506,17 @@ void main() {
       unloadBtn.style.display = "block";
       cubeRotX = 10 * Math.PI/180, cubeRotY = 0;
       camX = 0, camY = -0.72, camZ = -20;
+
+      baseH.localTransform = mat4Translate(mat4Identity(), [0, 1.15, 0]);
+
+      locationmatrix = mat4Identity(); 
+
+      baseH.rotation = [0,0,0];
+      characterRoot.rotation = [0,180*Math.PI/180, 0];
+      movx = 0;
+      movy = 0; 
+      movz = 0;
+      inverseRotation = mat4Identity();
     });
 
     // Mouse and keyboard interactions
@@ -815,7 +831,7 @@ void main() {
     }
 
     function loadCity(){
-      console.log("loading city");
+      // console.log("loading city");
       let tmp = Math.floor(gridSize/2);
       for(let i = 0; i < gridSize; i++){
         for(let j = 0; j < gridSize; j++){
@@ -933,6 +949,21 @@ void main() {
               }
             }
           }
+          else if (!grid[i][j].isSelected){
+            let road = createRoad();
+            if(j-1 < 0 || j + 1 >= gridSize ){
+              moveBuilding(road,1, tmp-i, tmp-j, 1);
+            }
+            else{
+              if(!grid[i][j-1].isSelected || !grid[i][j+1].isSelected){
+                moveBuilding(road,1, tmp-i, tmp-j, 0);
+              }
+              else{
+                moveBuilding(road,1, tmp-i, tmp-j, 1);
+              }
+            }
+            city.push(road);
+          }
         }
       }
 
@@ -945,6 +976,27 @@ void main() {
         }
       }
     }
+
+    function inBuilding(x,y){
+      let tmp = Math.floor(gridSize/2);
+      // x = x-tmp;
+      // y = y-tmp;
+      for(let i=0; i < gridSize; i++){
+        for(let j =0; j<gridSize; j++){
+          if(grid[i][j].hasBuilding){
+            let xmin = tmp - i - 0.6;
+            let xmax = tmp - i + 0.6;
+            let ymin = tmp - j - 0.6;
+            let ymax = tmp - j + 0.6;
+            if((xmin < x && xmax > x) && (ymin < y && ymax > y)){
+              // console.log("in building");
+              return true;
+            }
+          }
+        }
+      }
+      return false;
+    }
     let cube = addGeometry(makePrism(1,0.1,1,0,0,0), "textures/grid.png", "textures/grid.png", makeMaterial(0.3, 0.7, 0.5, 50), 0);
     
     let testCube = addGeometry(makePrism(0.3,0.3,0.3, 0,0,0), "textures/white.jpg", "textures/white.jpg", makeMaterial(1, 1, 1, 1), 0);
@@ -953,7 +1005,7 @@ void main() {
     const characterRoot = createCharacterModel(characterGeometries, drawfunc);
     let base = addGeometry( makePlane(0.001,0.001,1,0,0), "textures/white.jpg", "textures/white.jpg", makeMaterial(0.3, 0.5, 0.95, 40), 8);
     let baseH = createNode((gl) => drawfunc(gl, base), base);
-    baseH.scale = [0.5,0.5,0.5];
+    baseH.scale = [0.4,0.4,0.4];
     baseH.localTransform = mat4Translate(mat4Identity(), [0, 1.15, 0]);
 
     let locationmatrix = mat4Identity(); 
@@ -1051,16 +1103,29 @@ void main() {
 
       if(forward){
         startWalk = true;
-        characterRoot.translation[2] -= 0.025;
+        characterRoot.translation[2] -= 0.0125;
         characterRoot.rotation[0] = 20 * Math.PI/180;
         locationmatrix =  multiplyMat4( multiplyMat4( translationMatrix(baseH.translation), rotationMatrix(baseH.rotation)), translationMatrix(characterRoot.translation));
         locationmatrix[13] = 0;
         baseH.translation = [locationmatrix[12], locationmatrix[13], locationmatrix[14]];
         movx = -locationmatrix[12];
-        movy = -locationmatrix[13];
+        // movy = -locationmatrix[13];
         movz = -locationmatrix[14];
         inverseRotation = invertRotationMatrix(locationmatrix);
         characterRoot.translation = [0,0,0];
+        if(inBuilding(locationmatrix[12], locationmatrix[14])){
+          startWalk = true;
+          characterRoot.translation[2] += 0.0125;
+          characterRoot.rotation[0] = 20 * Math.PI/180;
+          locationmatrix =  multiplyMat4( multiplyMat4( translationMatrix(baseH.translation), rotationMatrix(baseH.rotation)), translationMatrix(characterRoot.translation));
+          locationmatrix[13] = 0;
+          baseH.translation = [locationmatrix[12], locationmatrix[13], locationmatrix[14]];
+          movx = -locationmatrix[12];
+          movy = -locationmatrix[13];
+          movz = -locationmatrix[14];
+          inverseRotation = invertRotationMatrix(locationmatrix);
+          characterRoot.translation = [0,0,0];
+        }
       }
       if(backward){
         startWalk = true;
@@ -1078,7 +1143,7 @@ void main() {
       if(right){
         startWalk = true;
         characterRoot.rotation[0] = 20 * Math.PI/180;
-        baseH.rotation[1] -= 5 * Math.PI/180;
+        baseH.rotation[1] -= 2 * Math.PI/180;
         locationmatrix =  multiplyMat4( multiplyMat4( translationMatrix(baseH.translation), rotationMatrix(baseH.rotation)), translationMatrix(characterRoot.translation));
         locationmatrix[13] = 0;
         baseH.translation = [locationmatrix[12], locationmatrix[13], locationmatrix[14]];
@@ -1092,7 +1157,7 @@ void main() {
       if(left){
         startWalk = true;
         characterRoot.rotation[0] = 20 * Math.PI/180;
-        baseH.rotation[1] += 5 * Math.PI/180;
+        baseH.rotation[1] += 2 * Math.PI/180;
         locationmatrix =  multiplyMat4( multiplyMat4( translationMatrix(baseH.translation), rotationMatrix(baseH.rotation)), translationMatrix(characterRoot.translation));
         locationmatrix[13] = 0;
         baseH.translation = [locationmatrix[12], locationmatrix[13], locationmatrix[14]];
@@ -1109,16 +1174,18 @@ void main() {
       tracker.transformations = multiplyMat4(modelTransformationMatrix, locationmatrix);
 
       characterRoot.translation[1] = 0.53;
+      baseH.translation[1] = 0.025;
       drawNode(gl, baseH, modelTransformationMatrix);
 
       testCube.transformations = multiplyMat4(modelTransformationMatrix, mat4Translate(mat4Identity(), [locationmatrix[12],locationmatrix[13],locationmatrix[14]]));
+      // inBuilding(testCube.transformations[12], testCube.transformations[1])
       if(worldMode == "peronsView"){
         let tmpj = Math.round(Math.floor(gridSize/2) + locationmatrix[12]);
         let tmpk = Math.round(Math.floor(gridSize/2) + locationmatrix[14]);
         if(tmpj >= 0 && tmpj)
         grid[tmpj][tmpk].highlight = true;
       }
-      //drawStrayFunc(gl,testCube);
+      // drawStrayFunc(gl,testCube);
     }
 
     // Initialize when page loads

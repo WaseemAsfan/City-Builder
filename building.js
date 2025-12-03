@@ -702,17 +702,17 @@ function makeRails(length, width){
 
 
 function createRoad(){
-    let roadgeom = addGeometry(makePrism(0.8, 0.05, 1,0,0), roadtex, roadtex, roadmat, 10);
+    let roadgeom = addGeometry(makePrism(1.0, 0.05, 1,0,0), roadtex, roadtex, roadmat, 10);
     let road = createNode((gl) => drawfunc(gl, roadgeom), roadgeom);
 
-    let sidegeom = addGeometry(makePrism(0.1, 0.075, 1,0,0,0), stonetex, stonetex, stonemat, 3);
-    let right = createNode((gl) => drawfunc(gl, sidegeom), sidegeom);
-    right.translation = [0.45, 0.0125, 0];
-    let left = createNode((gl) => drawfunc(gl, sidegeom), sidegeom);
-    left.translation = [-0.45, 0.0125, 0];
+    // let sidegeom = addGeometry(makePrism(0.1, 0.075, 1,0,0,0), stonetex, stonetex, stonemat, 3);
+    // let right = createNode((gl) => drawfunc(gl, sidegeom), sidegeom);
+    // right.translation = [0.45, 0.0125, 0];
+    // let left = createNode((gl) => drawfunc(gl, sidegeom), sidegeom);
+    // left.translation = [-0.45, 0.0125, 0];
 
-    addChild(road, right);
-    addChild(road, left);
+    // addChild(road, right);
+    // addChild(road, left);
     return road
 }
 
