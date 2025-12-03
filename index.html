@@ -109,9 +109,9 @@ noisy colors but the donut texture is nice in my opinion).-->
     <!-- Left Buttons -->
     <div class="button-panel">
       <button id = "strtBtn" class="btn btn-success btn-lg">Start Game</button>
-      <button class="btn btn-primary btn-lg">Load City</button>
-      <button class="btn btn-danger btn-lg">Reset</button>
-      <button class="btn btn-dark btn-lg">Reset Camera</button>
+      <button id = "loadBtn" class="btn btn-primary btn-lg">Load City</button>
+      <button id = "resetDrawBtn" class="btn btn-danger btn-lg">Reset</button>
+      <button id = "resetCamBtn" class="btn btn-dark btn-lg">Reset Camera</button>
     </div>
 
     <!-- Canvas -->
@@ -121,9 +121,10 @@ noisy colors but the donut texture is nice in my opinion).-->
 
     <!-- Right Buttons -->
     <div class="button-panel">
-      <button class="btn btn-info btn-lg">Unload City</button>
-      <button class="btn btn-warning btn-lg">Draw</button>
-      <button class="btn btn-secondary btn-lg">Erase</button>
+      <button id = "unloadBtn" class="btn btn-info btn-lg">Unload City</button>
+      <button id = "drawBtn" class="btn btn-warning btn-lg">Draw</button>
+      <button id = "eraseBtn" class="btn btn-secondary btn-lg">Erase</button>
+      <button id = "exitBtn" class="btn btn-danger btn-lg">Exit</button>
     </div>
   </div>
 
@@ -228,6 +229,7 @@ void main() {
 </script>
   <script src="primitives.js"></script>
   <script src="transformations.js"></script>
+  <script src="person.js"></script>
   <script src="building.js"></script>
 
   <script>
@@ -361,7 +363,6 @@ void main() {
     let count = -1;
     let checkForSelection = false;
     let selecting = "none";
-    // let currentModelViewMatrix, currentModelTransformationMatrix, currentProjectionMatrix;
 
     const unselectedTex = initTexture("textures/tile_blank.png");
     const selectedTex = initTexture("textures/tile_selected.png");
@@ -372,6 +373,7 @@ void main() {
     const blankBumpTex = initTexture("textures/white.jpg")
     let gridSize = 10;
     let gridRow=gridSize-1; gridCol=gridSize-1;
+    let personRow = Math.floor(gridSize/2), personCol = Math.floor(gridSize/2);
     let grid = [];
     let city = [];
     for(let j=0; j<gridSize; j++){
@@ -380,22 +382,27 @@ void main() {
         grid[j][k] = addTile(makePrism(1.0, 0.1, 1.0, 1.0, 1.0, 1.0), unselectedTex, blankBumpTex, makeMaterial(1.0, 0.0, 0.0, 5), 0);
         grid[j][k].isSelected = false;
         grid[j][k].hasBuilding = false;
+        grid[j][k].highlight = false;
       }
     }
     
-    const drawBtn = document.querySelector('.btn-warning');
-    const eraseBtn = document.querySelector('.btn-secondary');
-    const resetBtn = document.querySelector('.btn-danger');
-    const loadBtn = document.querySelector('.btn-primary');
-    const startBtn = document.querySelector(".btn-success");
-    const unloadBtn = document.querySelector(".btn-info");
-    const camBtn = document.querySelector(".btn-dark");
+    
+    const drawBtn = document.getElementById('drawBtn');
+    const eraseBtn = document.getElementById('eraseBtn');
+    const resetBtn = document.getElementById('resetDrawBtn');
+    const loadBtn = document.getElementById('loadBtn');
+    const startBtn = document.getElementById("strtBtn");
+    const unloadBtn = document.getElementById("unloadBtn");
+    const camBtn = document.getElementById("resetCamBtn");
+    const exitBtn = document.getElementById("exitBtn");
 
     startBtn.style.display = "none";
     camBtn.style.display = "none";
     unloadBtn.style.display = "none";
+    exitBtn.style.display = "none";
 
     let currentMode = 'none'; // 'none', 'draw', or 'erase'
+    let worldMode = "gridView"; // 'gridView', 'cityView', or 'personView'
 
     
     drawBtn.addEventListener('click', function() {
@@ -441,6 +448,11 @@ void main() {
     });
     
     loadBtn.addEventListener('click', function(){
+      worldMode = "cityView"
+      currentMode = 'none';
+      eraseBtn.classList.remove('active');
+      drawBtn.classList.remove('active');
+      selecting = "none";
       loadCity();
       startBtn.style.display = "block";
       unloadBtn.style.display = "block";
@@ -453,6 +465,11 @@ void main() {
     });
 
     unloadBtn.addEventListener('click', function(){
+      worldMode = "gridView"
+      currentMode = 'none';
+      eraseBtn.classList.remove('active');
+      drawBtn.classList.remove('active');
+      selecting = "none";
       resetCity();
       startBtn.style.display = "none";
       unloadBtn.style.display = "none";
@@ -461,9 +478,31 @@ void main() {
       drawBtn.style.display = "block";
       loadBtn.style.display = "block";
       resetBtn.style.display = "block";
-
     });
     
+    startBtn.addEventListener('click', function(){
+      worldMode = "personView"
+      startBtn.style.display = "none";
+      unloadBtn.style.display = "none";
+
+      camBtn.style.display = "block";
+      exitBtn.style.display = "block";
+
+      cubeRotX = 10 * Math.PI/180, cubeRotY = 0;
+      camX = 0, camY = -0.72, camZ = -2;
+    });
+
+    exitBtn.addEventListener('click', function(){
+      worldMode = "cityView"
+      camBtn.style.display = "none";
+      exitBtn.style.display = "none";
+
+      startBtn.style.display = "block";
+      unloadBtn.style.display = "block";
+      cubeRotX = 10 * Math.PI/180, cubeRotY = 0;
+      camX = 0, camY = -0.72, camZ = -20;
+    });
+
     // Mouse and keyboard interactions
     let mouseDown = false, lastX, lastY, cubeRotX = 10 * Math.PI/180, cubeRotY = 0; //
     let camX = 0, camY = -0.72, camZ = -20;
@@ -480,51 +519,124 @@ void main() {
       lastX = e.clientX; lastY = e.clientY;
     });
 
+    let startWalk = false;
+    let finishWalk = false;
+    let forward = false, backward= false, left= false, right= false;
+    
     document.addEventListener('keydown', e => {
       const step = 0.2;
       switch (e.key) {
-        case 'ArrowUp': camY -= step; break;
-        case 'ArrowDown': camY += step; break;
-        case 'ArrowLeft': camX += step; break;
-        case 'ArrowRight': camX -= step; break;
-        case 'w': camZ += step; break;
-        case 's': camZ -= step; break;
-        case 'k': if(gridCol-1 >= 0){
-          gridCol--;
-          if(selecting == "selecting"){
-            grid[gridRow][gridCol].isSelected = true;
+        case 'w': 
+          if(worldMode == "personView"){
+            startWalk = true;
+            forward = true;
           }
-          if(selecting == "erasing"){
-            grid[gridRow][gridCol].isSelected = false;
+          else{
+            camZ += step; 
+          } break;
+        case 's': 
+          if(worldMode == "personView"){
+          }
+          else{
+            camZ -= step; 
+          } break;
+        case 'a':
+          if(worldMode == "personView"){
+            startWalk = true;
+            left = true;
+          } break;
+        case 'd':
+          if(worldMode == "personView"){
+            startWalk = true;
+            right = true;
+          } break;
+        case 'ArrowDown': if(worldMode == "gridView"){
+          if(gridCol-1 >= 0 && worldMode == "gridView"){
+            gridCol--;
+            if(gridRow != personRow || gridCol != personCol){
+              if(selecting == "selecting"){
+                grid[gridRow][gridCol].isSelected = true;
+              }
+              if(selecting == "erasing"){
+                grid[gridRow][gridCol].isSelected = false;
+              } 
+            }
           } 
+        }
+        else{
+          camY += step;
         } break;
-        case 'i': if(gridCol+1 < gridSize){
-          gridCol++;
-          if(selecting == "selecting"){
-            grid[gridRow][gridCol].isSelected = true;
+        case 'ArrowUp': if(worldMode == "gridView"){
+          if(gridCol+1 < gridSize){
+            gridCol++;
+            if(gridRow != personRow || gridCol != personCol){
+              if(selecting == "selecting"){
+                grid[gridRow][gridCol].isSelected = true;
+              }
+              if(selecting == "erasing"){
+                grid[gridRow][gridCol].isSelected = false;
+              }
+            }
           }
-          if(selecting == "erasing"){
-            grid[gridRow][gridCol].isSelected = false;
-          }
+        }
+        else{
+          camY -= step;
         } break;
-        case 'l': if(gridRow-1 >= 0){
-          gridRow--; 
-          if(selecting == "selecting"){
-            grid[gridRow][gridCol].isSelected = true;
+        case 'ArrowRight': if(worldMode == "gridView"){
+          if(gridRow-1 >= 0 && worldMode == "gridView"){
+            gridRow--; 
+            if(gridRow != personRow || gridCol != personCol){
+              if(selecting == "selecting"){
+                grid[gridRow][gridCol].isSelected = true;
+              }
+              if(selecting == "erasing"){
+                grid[gridRow][gridCol].isSelected = false;
+              }
+            }
           }
-          if(selecting == "erasing"){
-            grid[gridRow][gridCol].isSelected = false;
+        } 
+        else if(worldMode == "cityView"){
+          camX -= step;
+        }
+        else{
+          camZ += step;
+        }break;
+        case 'ArrowLeft': if(worldMode == "gridView"){
+          if(gridRow+1 < gridSize && worldMode == "gridView"){
+            gridRow++;
+            if(gridRow != personRow || gridCol != personCol){
+              if(selecting == "selecting"){
+                grid[gridRow][gridCol].isSelected = true;
+              }
+              if(selecting == "erasing"){
+                grid[gridRow][gridCol].isSelected = false;
+              }
+            }
           }
+        } 
+        else if(worldMode == "cityView"){
+          camX += step;
+        }
+        else{
+          camZ -= step;
         } break;
-        case 'j': if(gridRow+1 < gridSize){
-          gridRow++;
-          if(selecting == "selecting"){
-            grid[gridRow][gridCol].isSelected = true;
-          }
-          if(selecting == "erasing"){
-            grid[gridRow][gridCol].isSelected = false;
-          }
-        } break;
+      }
+    });
+
+    document.addEventListener('keyup', e => {
+      if (e.key === 'w' && worldMode == "personView") {
+        forward = false;
+      }
+      if (e.key === 'd' && worldMode == "personView") {
+        right = false;
+      }
+      if (e.key === 'a' && worldMode == "personView") {
+        left = false;
+      }
+
+      // // Optional: stop walking animation on any arrow release
+      if (['w','a','s','d'].includes(e.key)) {
+        startWalk = false;
       }
     });
 
@@ -835,6 +947,33 @@ void main() {
     }
     let cube = addGeometry(makePrism(1,0.1,1,0,0,0), "textures/grid.png", "textures/grid.png", makeMaterial(0.3, 0.7, 0.5, 50), 0);
     
+    let testCube = addGeometry(makePrism(0.3,0.3,0.3, 0,0,0), "textures/white.jpg", "textures/white.jpg", makeMaterial(1, 1, 1, 1), 0);
+    //======================================= Person =====================================================================
+    const characterGeometries = initializeCharacterGeometries(addGeometry, makeMaterial);
+    const characterRoot = createCharacterModel(characterGeometries, drawfunc);
+    let base = addGeometry( makePlane(0.001,0.001,1,0,0), "textures/white.jpg", "textures/white.jpg", makeMaterial(0.3, 0.5, 0.95, 40), 8);
+    let baseH = createNode((gl) => drawfunc(gl, base), base);
+    baseH.scale = [0.5,0.5,0.5];
+    baseH.localTransform = mat4Translate(mat4Identity(), [0, 1.15, 0]);
+
+    let locationmatrix = mat4Identity(); 
+    let tracker = addGeometry( makePlane(0.2,0.2,0.2,1,0,0), "textures/white.jpg", "textures/white.jpg", makeMaterial(0.3, 0.5, 0.95, 40), 8);
+
+    addChild(baseH, characterRoot);
+    characterRoot.rotation = [0,180*Math.PI/180, 0];
+    let movx = 0, movy = 0, movz = 0;
+
+    function invertRotationMatrix(mat) {
+    // For a 4x4 matrix, transpose the 3x3 rotation part
+      return [
+        mat[0], mat[4], mat[8], 0,
+        mat[1], mat[5], mat[9], 0,
+        mat[2], mat[6], mat[10], 0,
+        0, 0, 0, 1
+      ];
+    }
+
+    let inverseRotation = mat4Identity();
 
     function render() {
       
@@ -862,6 +1001,8 @@ void main() {
       let deltaTime = Date.now() - startTime;
       // object rotation
       modelTransformationMatrix = multiplyMat4(modelTransformationMatrix, cubeRotation);
+      modelTransformationMatrix = multiplyMat4(modelTransformationMatrix, inverseRotation); // Apply inverse rotation
+      modelTransformationMatrix = mat4Translate(modelTransformationMatrix, [movx, movy, movz]);
       // camera translation
      
       modelViewMatrix = mat4Translate(modelViewMatrix, [camX, camY, camZ]);
@@ -881,7 +1022,7 @@ void main() {
 
       for(let j=0; j<gridSize; j++){
         for(let k=0; k<gridSize; k++){
-          if(j==gridRow && k==gridCol){
+          if(j==gridRow && k==gridCol && worldMode == "gridView"){
             if(selecting == "erasing"){
               if(grid[j][k].isSelected) grid[j][k].texture = selectedEraseTex;
               else grid[j][k].texture = eraseTex;
@@ -891,7 +1032,8 @@ void main() {
               else grid[j][k].texture = hoveredTex;
             }
           }
-          else if(grid[j][k].isSelected) grid[j][k].texture = selectedTex; 
+          else if(grid[j][k].isSelected) grid[j][k].texture = selectedTex;
+          else if(grid[j][k].highlight) grid[j][k].texture = selectedTex;
           else grid[j][k].texture = unselectedTex;
           grid[j][k].transformations = multiplyMat4(modelTransformationMatrix, mat4Translate(mat4Identity(), [Math.floor(gridSize/2) - j, -0.05, Math.floor(gridSize/2) - k]));
           drawStrayFunc(gl, grid[j][k]);
@@ -900,6 +1042,83 @@ void main() {
       for(let j=0; j < city.length; j++){
         drawNode(gl, city[j], modelTransformationMatrix);
       }
+
+
+      //============= Draw Person ===================
+      if(finishWalk || startWalk){
+        finishWalk = walk(deltaTime);
+      }
+
+      if(forward){
+        startWalk = true;
+        characterRoot.translation[2] -= 0.025;
+        characterRoot.rotation[0] = 20 * Math.PI/180;
+        locationmatrix =  multiplyMat4( multiplyMat4( translationMatrix(baseH.translation), rotationMatrix(baseH.rotation)), translationMatrix(characterRoot.translation));
+        locationmatrix[13] = 0;
+        baseH.translation = [locationmatrix[12], locationmatrix[13], locationmatrix[14]];
+        movx = -locationmatrix[12];
+        movy = -locationmatrix[13];
+        movz = -locationmatrix[14];
+        inverseRotation = invertRotationMatrix(locationmatrix);
+        characterRoot.translation = [0,0,0];
+      }
+      if(backward){
+        startWalk = true;
+        characterRoot.rotation[0] = 20 * Math.PI/180;
+        locationmatrix =  multiplyMat4( multiplyMat4( translationMatrix(baseH.translation), rotationMatrix(baseH.rotation)), translationMatrix(characterRoot.translation));
+        locationmatrix[13] = 0;
+        baseH.translation = [locationmatrix[12], locationmatrix[13], locationmatrix[14]];
+        movx = -locationmatrix[12];
+        movy = -locationmatrix[13];
+        movz = -locationmatrix[14];
+        inverseRotation = invertRotationMatrix(locationmatrix);
+        characterRoot.translation = [0,0,0];
+      }
+      
+      if(right){
+        startWalk = true;
+        characterRoot.rotation[0] = 20 * Math.PI/180;
+        baseH.rotation[1] -= 5 * Math.PI/180;
+        locationmatrix =  multiplyMat4( multiplyMat4( translationMatrix(baseH.translation), rotationMatrix(baseH.rotation)), translationMatrix(characterRoot.translation));
+        locationmatrix[13] = 0;
+        baseH.translation = [locationmatrix[12], locationmatrix[13], locationmatrix[14]];
+        movx = -locationmatrix[12];
+        movy = -locationmatrix[13];
+        movz = -locationmatrix[14];
+        inverseRotation = invertRotationMatrix(locationmatrix);
+        characterRoot.translation = [0,0,0];
+      }
+      
+      if(left){
+        startWalk = true;
+        characterRoot.rotation[0] = 20 * Math.PI/180;
+        baseH.rotation[1] += 5 * Math.PI/180;
+        locationmatrix =  multiplyMat4( multiplyMat4( translationMatrix(baseH.translation), rotationMatrix(baseH.rotation)), translationMatrix(characterRoot.translation));
+        locationmatrix[13] = 0;
+        baseH.translation = [locationmatrix[12], locationmatrix[13], locationmatrix[14]];
+        inverseRotation = invertRotationMatrix(locationmatrix);
+        characterRoot.translation = [0,0,0];
+      }
+      
+      if(forward == false && backward == false && right == false && left == false){
+        characterRoot.rotation[0] = [0];
+        baseH.translation = [locationmatrix[12], locationmatrix[13], locationmatrix[14]];
+        characterRoot.translation = [0,0,0];
+      }
+      
+      tracker.transformations = multiplyMat4(modelTransformationMatrix, locationmatrix);
+
+      characterRoot.translation[1] = 0.53;
+      drawNode(gl, baseH, modelTransformationMatrix);
+
+      testCube.transformations = multiplyMat4(modelTransformationMatrix, mat4Translate(mat4Identity(), [locationmatrix[12],locationmatrix[13],locationmatrix[14]]));
+      if(worldMode == "peronsView"){
+        let tmpj = Math.round(Math.floor(gridSize/2) + locationmatrix[12]);
+        let tmpk = Math.round(Math.floor(gridSize/2) + locationmatrix[14]);
+        if(tmpj >= 0 && tmpj)
+        grid[tmpj][tmpk].highlight = true;
+      }
+      //drawStrayFunc(gl,testCube);
     }
 
     // Initialize when page loads
