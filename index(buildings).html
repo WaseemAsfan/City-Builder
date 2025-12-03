@@ -154,7 +154,7 @@ void main() {
 
   <script src="primitives.js"></script>
   <script src="transformations.js"></script>
-  <script src="person.js"></script>
+  <script src="building.js"></script>
 
   <script>
     function createShader(gl, type, source) {
@@ -222,23 +222,32 @@ void main() {
         normbuff : normbuff
       };
     }
+
+    const textureCache = {};
+
     function initTexture(url){
+      // Return cached texture if it exists
+      if (textureCache[url]) {
+        return textureCache[url];
+      }
+      
       let texture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, texture);
-
-      // Set a 1x1 white pixel as placeholder while image loads
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
                     new Uint8Array([255, 255, 255, 255]));
 
       const image = new Image();
-      image.src = url
+      image.src = url;
       image.onload = function() {
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-      gl.generateMipmap(gl.TEXTURE_2D);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.generateMipmap(gl.TEXTURE_2D);
       }
+      
+      textureCache[url] = texture;
       return texture;
     }
+
 
     let uKaLoc, uKdLoc, uKsLoc, uAlphaLoc;
     let uLightAPosLoc, uViewPosLoc, uLightBPosLoc;
@@ -277,7 +286,7 @@ void main() {
 
     // Mouse and keyboard interactions
     let mouseDown = false, lastX, lastY, cubeRotX = 10 * Math.PI/180, cubeRotY = 0; //
-    let camX = 0, camY = -0.72, camZ = -2;
+    let camX = 0, camY = 0, camZ = -7;
     let offsetx = 0, offsety = -0.5, offsetz = -2;
 
     canvas.addEventListener('mousedown', e => { mouseDown = true; lastX = e.clientX; lastY = e.clientY; });
@@ -374,7 +383,8 @@ void main() {
     }
     
     function drawfunc(gl, shapeGeometry){
-      let i = shapeGeometry.textcount;
+      // let i = shapeGeometry.textcount;
+      i = 0
       gl.uniform1f(uKaLoc, shapeGeometry.material.ka);
       gl.uniform1f(uKdLoc, shapeGeometry.material.kd);
       gl.uniform1f(uKsLoc, shapeGeometry.material.ks);
@@ -448,80 +458,32 @@ void main() {
     }
 
 
-    let plane = addGeometry( makePlane(10,10,10,1,0,0), "textures/grid.png", "textures/grid.jpg", makeMaterial(0.3, 0.5, 0.95, 40), 8);
-    // plane.transformations = mat4RotateX(mat4Identity(), 90 * Math.PI/180);
-    const characterGeometries = initializeCharacterGeometries(addGeometry, makeMaterial);
-    const characterRoot = createCharacterModel(characterGeometries, drawfunc);
+    const building1 = createbuilding1Model();
+    // moveBuilding(building1, 0,0,0);
+    // const building2 = createbuilding2Model();
+    // building2.translation = [1.25,0,0];
+    // const road = createRoad();
+    // road.rotation = [0, Math.PI/2, 0];
+    // road.translation = [0,-0.975,1];
+    // const road2 = createRoad();
+    // road2.rotation = [0, Math.PI/2, 0];
+    // road2.translation = [1.25,-0.975,1];
+
+    // const building3 = createbuilding3Model();
+    const building4 = createbuilding4Model();
+    moveBuilding(building4,4, 0,0,3);
+    // building3.translation[0] = [-1.25];
+    // const road3 = createRoad();
+    // road3.rotation = [0, Math.PI/2, 0];
+    // road3.translation = [-1.25,-0.975,1];
+
+    // building4.translation[0] = [3];
+    // const road4 = createRoad();
+    // road4.rotation = [0, Math.PI/2, 0];
+    // road4.translation = [3,-0.975,1];
     
-    let startWalk = false;
-    let finishWalk = false;
-    let forward = false, backward= false, left= false, right= false;
-    document.addEventListener('keydown', e => {
-      const step = 0.2;
-      switch (e.key) {
-        case 'e': 
-          startWalk = true;
-          forward = true;
-          break;  
-        case 'd': 
-          startWalk = true;
-          backward = true;
-          break; 
-        case 'f': 
-          startWalk = true;
-          right = true;
-          break; 
-        case 'a': 
-          startWalk = true;
-          left = true;
-          break;  
-      }
-    });
 
-
-    
-    document.addEventListener('keyup', e => {
-      if (e.key === 'e') {
-        forward = false;
-      }
-      if (e.key === 'd') {
-        backward = false;
-      }
-      if (e.key === 'f') {
-        right = false;
-      }
-      if (e.key === 'a') {
-        left = false;
-      }
-
-      // // Optional: stop walking animation on any arrow release
-      if (['e','d','f','a'].includes(e.key)) {
-        startWalk = false;
-      }
-    });
-
-    let base = addGeometry( makePlane(0.001,0.001,1,0,0), "textures/frostingtex.png", "textures/grid.jpg", makeMaterial(0.3, 0.5, 0.95, 40), 8);
-    let baseH = createNode((gl) => drawfunc(gl, base), base);
-    baseH.localTransform = mat4Translate(mat4Identity(), [0, 1.15, 0]);
-
-    let locationmatrix = mat4Identity(); 
-    let tracker = addGeometry( makePlane(0.2,0.2,0.2,1,0,0), "textures/red.png", "textures/grid.jpg", makeMaterial(0.3, 0.5, 0.95, 40), 8);
-
-    addChild(baseH, characterRoot);
-    characterRoot.rotation = [0,180*Math.PI/180, 0];
-    let movx = 0, movy = 0, movz = 0, charrot;
-    
-    function invertRotationMatrix(mat) {
-    // For a 4x4 matrix, transpose the 3x3 rotation part
-      return [
-        mat[0], mat[4], mat[8], 0,
-        mat[1], mat[5], mat[9], 0,
-        mat[2], mat[6], mat[10], 0,
-        0, 0, 0, 1
-      ];
-    }
-
-    let inverseRotation = mat4Identity();
+    // building2.translation = [0,1,1];
     function render() {
       
       gl.enable(gl.DEPTH_TEST);
@@ -548,8 +510,6 @@ void main() {
       let deltaTime = Date.now() - startTime;
       // object rotation
       modelTransformationMatrix = multiplyMat4(modelTransformationMatrix, cubeRotation);
-      modelTransformationMatrix = multiplyMat4(modelTransformationMatrix, inverseRotation); // Apply inverse rotation
-      modelTransformationMatrix = mat4Translate(modelTransformationMatrix, [movx, movy, movz]);
       // camera translation
      
       modelViewMatrix = mat4Translate(modelViewMatrix, [camX, camY, camZ]);
@@ -567,81 +527,15 @@ void main() {
       gl.uniform3fv(uLightBPosLoc, [-10,10,-10]);
       gl.uniform3fv(uViewPosLoc, [0.0, 0.0, 0.0]);
       
-      if(finishWalk || startWalk){
-        finishWalk = walk(deltaTime);
-
-        // camX = offsetx + characterRoot.translation[0];
-      }
-
-      if(forward){
-        startWalk = true;
-        characterRoot.translation[2] -= 0.025;
-        characterRoot.rotation[0] = 20 * Math.PI/180;
-        locationmatrix =  multiplyMat4( multiplyMat4( translationMatrix(baseH.translation), rotationMatrix(baseH.rotation)), translationMatrix(characterRoot.translation));
-        locationmatrix[13] = 0;
-        baseH.translation = [locationmatrix[12], locationmatrix[13], locationmatrix[14]];
-        movx = -locationmatrix[12];
-        movy = -locationmatrix[13];
-        movz = -locationmatrix[14];
-        inverseRotation = invertRotationMatrix(locationmatrix);
-        characterRoot.translation = [0,0,0];
-      }
-      if(backward){
-        startWalk = true;
-        characterRoot.rotation[0] = 20 * Math.PI/180;
-        locationmatrix =  multiplyMat4( multiplyMat4( translationMatrix(baseH.translation), rotationMatrix(baseH.rotation)), translationMatrix(characterRoot.translation));
-        locationmatrix[13] = 0;
-        baseH.translation = [locationmatrix[12], locationmatrix[13], locationmatrix[14]];
-        movx = -locationmatrix[12];
-        movy = -locationmatrix[13];
-        movz = -locationmatrix[14];
-        inverseRotation = invertRotationMatrix(locationmatrix);
-        characterRoot.translation = [0,0,0];
-      }
-      
-      if(right){
-        startWalk = true;
-        characterRoot.rotation[0] = 20 * Math.PI/180;
-        baseH.rotation[1] -= 5 * Math.PI/180;
-        locationmatrix =  multiplyMat4( multiplyMat4( translationMatrix(baseH.translation), rotationMatrix(baseH.rotation)), translationMatrix(characterRoot.translation));
-        locationmatrix[13] = 0;
-        baseH.translation = [locationmatrix[12], locationmatrix[13], locationmatrix[14]];
-        movx = -locationmatrix[12];
-        movy = -locationmatrix[13];
-        movz = -locationmatrix[14];
-        inverseRotation = invertRotationMatrix(locationmatrix);
-        characterRoot.translation = [0,0,0];
-      }
-      
-      if(left){
-        startWalk = true;
-        characterRoot.rotation[0] = 20 * Math.PI/180;
-        // characterRoot.rotation[1] = 200 * Math.PI/180;
-        baseH.rotation[1] += 5 * Math.PI/180;
-        locationmatrix =  multiplyMat4( multiplyMat4( translationMatrix(baseH.translation), rotationMatrix(baseH.rotation)), translationMatrix(characterRoot.translation));
-        locationmatrix[13] = 0;
-        baseH.translation = [locationmatrix[12], locationmatrix[13], locationmatrix[14]];
-        inverseRotation = invertRotationMatrix(locationmatrix);
-        characterRoot.translation = [0,0,0];
-      }
-      
-      if(forward == false && backward == false && right == false && left == false){
-        characterRoot.rotation[0] = [0];
-        baseH.translation = [locationmatrix[12], locationmatrix[13], locationmatrix[14]];
-        characterRoot.translation = [0,0,0];
-        // baseH.translation = characterRoot.translation;
-        // characterRoot.translation = [0,0,0];
-      }
-
-      plane.transformations = multiplyMat4(modelTransformationMatrix, mat4RotateX(mat4Identity(), -90 * Math.PI/180));
-      tracker.transformations = multiplyMat4(modelTransformationMatrix, locationmatrix);
-      // drawStrayFunc(gl, tracker);
-      drawStrayFunc(gl, plane);
-      // gl.uniformMatrix4fv(uMTM, false, multiplyMat4(mat4RotateX(mat4Identity(), 90 * Math.PI/180)));
-
-      characterRoot.translation[1] = 0.53;
-      drawNode(gl, baseH, modelTransformationMatrix);
-      
+      drawNode(gl, building1, modelTransformationMatrix);
+      // drawNode(gl, road, modelTransformationMatrix);
+      // drawNode(gl, building2, modelTransformationMatrix);
+      // drawNode(gl, road2, modelTransformationMatrix);
+      // drawNode(gl, building2, modelTransformationMatrix);
+      // drawNode(gl, road3, modelTransformationMatrix);
+      // drawNode(gl, building3, modelTransformationMatrix);
+      // drawNode(gl, road4, modelTransformationMatrix);
+      drawNode(gl, building4, modelTransformationMatrix);
     }
 
     // Initialize when page loads
@@ -652,4 +546,3 @@ void main() {
   </script>
 </body>
 
-</html>

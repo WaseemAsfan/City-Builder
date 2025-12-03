@@ -155,6 +155,7 @@ void main() {
   <script src="primitives.js"></script>
   <script src="transformations.js"></script>
   <script src="person.js"></script>
+  <script src="building.js"></script>
 
   <script>
     function createShader(gl, type, source) {
@@ -222,21 +223,28 @@ void main() {
         normbuff : normbuff
       };
     }
+    const textureCache = {};
+
     function initTexture(url){
+      // Return cached texture if it exists
+      if (textureCache[url]) {
+        return textureCache[url];
+      }
+      
       let texture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, texture);
-
-      // Set a 1x1 white pixel as placeholder while image loads
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
                     new Uint8Array([255, 255, 255, 255]));
 
       const image = new Image();
-      image.src = url
+      image.src = url;
       image.onload = function() {
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-      gl.generateMipmap(gl.TEXTURE_2D);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.generateMipmap(gl.TEXTURE_2D);
       }
+      
+      textureCache[url] = texture;
       return texture;
     }
 
@@ -374,7 +382,8 @@ void main() {
     }
     
     function drawfunc(gl, shapeGeometry){
-      let i = shapeGeometry.textcount;
+      // let i = shapeGeometry.textcount;
+      let i = 0;
       gl.uniform1f(uKaLoc, shapeGeometry.material.ka);
       gl.uniform1f(uKdLoc, shapeGeometry.material.kd);
       gl.uniform1f(uKsLoc, shapeGeometry.material.ks);
@@ -448,7 +457,7 @@ void main() {
     }
 
 
-    let plane = addGeometry( makePlane(10,10,10,1,0,0), "textures/grid.png", "textures/grid.jpg", makeMaterial(0.3, 0.5, 0.95, 40), 8);
+    let plane = addGeometry( makePlane(10,10,10,1,0,0), "textures/grid.png", "textures/white.jpg", makeMaterial(0.3, 0.5, 0.95, 40), 0);
     // plane.transformations = mat4RotateX(mat4Identity(), 90 * Math.PI/180);
     const characterGeometries = initializeCharacterGeometries(addGeometry, makeMaterial);
     const characterRoot = createCharacterModel(characterGeometries, drawfunc);
@@ -500,12 +509,12 @@ void main() {
       }
     });
 
-    let base = addGeometry( makePlane(0.001,0.001,1,0,0), "textures/frostingtex.png", "textures/grid.jpg", makeMaterial(0.3, 0.5, 0.95, 40), 8);
+    let base = addGeometry( makePlane(0.001,0.001,1,0,0), "textures/white.jpg", "textures/white.jpg", makeMaterial(0.3, 0.5, 0.95, 40), 8);
     let baseH = createNode((gl) => drawfunc(gl, base), base);
     baseH.localTransform = mat4Translate(mat4Identity(), [0, 1.15, 0]);
 
     let locationmatrix = mat4Identity(); 
-    let tracker = addGeometry( makePlane(0.2,0.2,0.2,1,0,0), "textures/red.png", "textures/grid.jpg", makeMaterial(0.3, 0.5, 0.95, 40), 8);
+    let tracker = addGeometry( makePlane(0.2,0.2,0.2,1,0,0), "textures/white.jpg", "textures/white.jpg", makeMaterial(0.3, 0.5, 0.95, 40), 8);
 
     addChild(baseH, characterRoot);
     characterRoot.rotation = [0,180*Math.PI/180, 0];
@@ -522,6 +531,52 @@ void main() {
     }
 
     let inverseRotation = mat4Identity();
+
+    // const building1 = createbuilding1Model();
+    // const building2 = createbuilding2Model();
+    // building2.translation = [2.5,0,0];
+    // const road = createRoad();
+    // road.rotation = [0, Math.PI/2, 0];
+    // road.translation = [0, 0.05,2.25];
+    // const road2 = createRoad();
+    // road2.rotation = [0, Math.PI/2, 0];
+    // road2.translation = [2.5,0.05,2.25];
+
+    // const building3 = createbuilding3Model();
+    // const building4 = createbuilding4Model();
+    // building3.translation[0] = [-2.5];
+    // const road3 = createRoad();
+    // road3.rotation = [0, Math.PI/2, 0];
+    // road3.translation = [-2.5,0.05,2.25];
+
+    // building4.translation[0] = [6.5];
+    // const road4 = createRoad();
+    // road4.rotation = [0, Math.PI/2, 0];
+    // road4.translation = [6.5,0.05,2.25];
+
+    // building1.scale = [2.25,2.25, 2.25];
+    // building2.scale = [2.25,2.25, 2.25];
+    // building3.scale = [2.25,2.25, 2.25];
+    // building4.scale = [2.25,2.25, 2.25];
+    // road.scale = [2.25,2.25,2.25];
+    // road2.scale = [2.25,2.25,2.25];
+    // road3.scale = [2.25,2.25,2.25];
+    // road4.scale = [2.25,2.25,2.25];
+
+    // building1.translation[1] += 2.25;
+    // building2.translation[1] += 2.25;
+    // building3.translation[1] += 1.625;
+    // building4.translation[1] += 1.625;
+
+    // building1.translation[2] -= 2.25;
+    // building2.translation[2] -= 2.25;
+    // building3.translation[2] -= 2.25;
+    // building4.translation[2] -= 2.25;
+    // road.translation[2] -= 2.25;
+    // road2.translation[2] -= 2.25;
+    // road3.translation[2] -= 2.25;
+    // road4.translation[2] -= 2.25;
+
     function render() {
       
       gl.enable(gl.DEPTH_TEST);
@@ -633,14 +688,24 @@ void main() {
         // characterRoot.translation = [0,0,0];
       }
 
-      plane.transformations = multiplyMat4(modelTransformationMatrix, mat4RotateX(mat4Identity(), -90 * Math.PI/180));
+      // plane.transformations = multiplyMat4(modelTransformationMatrix, mat4RotateX(mat4Identity(), -90 * Math.PI/180));
       tracker.transformations = multiplyMat4(modelTransformationMatrix, locationmatrix);
       // drawStrayFunc(gl, tracker);
-      drawStrayFunc(gl, plane);
+      // drawStrayFunc(gl, plane);
       // gl.uniformMatrix4fv(uMTM, false, multiplyMat4(mat4RotateX(mat4Identity(), 90 * Math.PI/180)));
 
       characterRoot.translation[1] = 0.53;
       drawNode(gl, baseH, modelTransformationMatrix);
+
+      // drawNode(gl, building1, modelTransformationMatrix);
+      // drawNode(gl, road, modelTransformationMatrix);
+      // drawNode(gl, building2, modelTransformationMatrix);
+      // drawNode(gl, road2, modelTransformationMatrix);
+      // drawNode(gl, building2, modelTransformationMatrix);
+      // drawNode(gl, road3, modelTransformationMatrix);
+      // drawNode(gl, building3, modelTransformationMatrix);
+      // drawNode(gl, road4, modelTransformationMatrix);
+      // drawNode(gl, building4, modelTransformationMatrix);
       
     }
 

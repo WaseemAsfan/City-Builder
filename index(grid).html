@@ -317,55 +317,55 @@ void main() {
       if(checkForSelection){
         let ndcX = (e.clientX / canvas.width) * 2 - 1;
         let ndcY = -((e.clientY / canvas.height) * 2 - 1);
-        console.log("1. NDC coordinates:", ndcX, ndcY);
+        // console.log("1. NDC coordinates:", ndcX, ndcY);
 
-        let combinedMatrix = multiplyMat4(multiplyMat4(currentProjectionMatrix, currentModelViewMatrix), currentModelTransformationMatrix);
-        let inverseMatrix = mat4Invert(combinedMatrix);
-        console.log("2. Inverse matrix computed:", inverseMatrix);
+        // let combinedMatrix = multiplyMat4(multiplyMat4(currentProjectionMatrix, currentModelViewMatrix), currentModelTransformationMatrix);
+        // let inverseMatrix = mat4Invert(combinedMatrix);
+        // console.log("2. Inverse matrix computed:", inverseMatrix);
 
-        let nearPoint = [ndcX, ndcY, -1, 1];
-        let farPoint = [ndcX, ndcY, 1, 1];
+        // let nearPoint = [ndcX, ndcY, -1, 1];
+        // let farPoint = [ndcX, ndcY, 1, 1];
 
-        let nearPlane = multiplyMatVec4(inverseMatrix, nearPoint);
-        let farPlane = multiplyMatVec4(inverseMatrix, farPoint);
+        // let nearPlane = multiplyMatVec4(inverseMatrix, nearPoint);
+        // let farPlane = multiplyMatVec4(inverseMatrix, farPoint);
 
-        nearPlane = convertToCartesian(nearPlane);
-        farPlane = convertToCartesian(farPlane);
-        console.log("3. After perspective divide - nearPlane:", nearPlane);
-        console.log("3. After perspective divide - farPlane:", farPlane);
+        // nearPlane = convertToCartesian(nearPlane);
+        // farPlane = convertToCartesian(farPlane);
+        // console.log("3. After perspective divide - nearPlane:", nearPlane);
+        // console.log("3. After perspective divide - farPlane:", farPlane);
 
-        let rayOrigin = nearPlane;
-        let rayDirection = [farPlane[0] = nearPlane[0], farPlane[1]-nearPlane[1], farPlane[2]-nearPlane[2]]
-        rayDirection = normalize(rayDirection);
+        // let rayOrigin = nearPlane;
+        // let rayDirection = [farPlane[0] = nearPlane[0], farPlane[1]-nearPlane[1], farPlane[2]-nearPlane[2]]
+        // rayDirection = normalize(rayDirection);
 
-        if(Math.abs(rayDirection[1]) > 0.0001){
-          console.log(`Ray Not Parallel`);
-          let t = -rayOrigin[1] / rayDirection[1];
-          if(t>=0){
-            let intersectX = rayOrigin[0] + t*rayDirection[0];
-            let intersectZ = rayOrigin[2] + t*rayDirection[2];
-            console.log(`World intersection point: (${intersectX}, 0, ${intersectZ})`);
+        // if(Math.abs(rayDirection[1]) > 0.0001){
+        //   console.log(`Ray Not Parallel`);
+        //   let t = -rayOrigin[1] / rayDirection[1];
+        //   if(t>=0){
+        //     let intersectX = rayOrigin[0] + t*rayDirection[0];
+        //     let intersectZ = rayOrigin[2] + t*rayDirection[2];
+        //     console.log(`World intersection point: (${intersectX}, 0, ${intersectZ})`);
 
-            let invModelTransform = mat4Invert(currentModelTransformationMatrix);
-            let localIntersection = multiplyMatVec4(invModelTransform, [intersectX, 0.0, intersectZ, 1.0]);
-            localIntersection = convertToCartesian(localIntersection);
+        //     let invModelTransform = mat4Invert(currentModelTransformationMatrix);
+        //     let localIntersection = multiplyMatVec4(invModelTransform, [intersectX, 0.0, intersectZ, 1.0]);
+        //     localIntersection = convertToCartesian(localIntersection);
 
-            let j = Math.round(gridSize/2 - localIntersection[0]);
-            let k = Math.round(gridSize/2 - localIntersection[2]);
-            console.log(`Grid indices: [${j}, ${k}]`);
+        //     let j = Math.round(gridSize/2 - localIntersection[0]);
+        //     let k = Math.round(gridSize/2 - localIntersection[2]);
+        //     console.log(`Grid indices: [${j}, ${k}]`);
 
-            if(j>=0 && j<gridSize && k>=0 && k<gridSize){
-              console.log(`✓ Valid selection: grid[${j}][${k}]`);
-              grid[j][k].texture = selectedTex;
-            } else{
-              console.log(`✗ Click outside grid bounds`);
-            }
-          } else{
-            console.log(`✗ Intersection behind camera (t = ${t})`);
-          }
-        } else{
-          console.log(`✗ Ray is parallel to ground plane`);
-        }
+        //     if(j>=0 && j<gridSize && k>=0 && k<gridSize){
+        //       console.log(`✓ Valid selection: grid[${j}][${k}]`);
+        //       grid[j][k].texture = selectedTex;
+        //     } else{
+        //       console.log(`✗ Click outside grid bounds`);
+        //     }
+        //   } else{
+        //     console.log(`✗ Intersection behind camera (t = ${t})`);
+        //   }
+        // } else{
+        //   console.log(`✗ Ray is parallel to ground plane`);
+        // }
       }
     });
 
