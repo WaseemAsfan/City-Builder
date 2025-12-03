@@ -298,13 +298,9 @@ void main() {
     for(let j=0; j<gridSize; j++){
       grid[j] = [];
       for(let k=0; k<gridSize; k++){
-        //if(k%2==0 && j%2==0) { grid[j][k]=addTile(makePrism(1.0, 0.1, 1.0, 1.0, 1.0, 1.0), unselectedTex, blankBumpTex, makeMaterial(1.0, 0.0, 0.0, 5), 0); }
-        //else if(k%2==0) { grid[j][k]=addTile(makePrism(1.0, 0.1, 1.0, 1.0, 1.0, 1.0), selectedTex, blankBumpTex, makeMaterial(1.0, 0.0, 0.0, 5), 0); }
-        //else if(j%2==0) { grid[j][k]=addTile(makePrism(1.0, 0.1, 1.0, 1.0, 1.0, 1.0), hoveredTex, blankBumpTex, makeMaterial(1.0, 0.0, 0.0, 5), 0); }
-        //else { grid[j][k]=addTile(makePrism(1.0, 0.1, 1.0, 1.0, 1.0, 1.0), selectedHoveredTex, blankBumpTex, makeMaterial(1.0, 0.0, 0.0, 5), 0); }
         grid[j][k] = addTile(makePrism(1.0, 0.1, 1.0, 1.0, 1.0, 1.0), unselectedTex, blankBumpTex, makeMaterial(1.0, 0.0, 0.0, 5), 0);
         grid[j][k].isSelected = false;
-        grid[j][k].hasBuilding = false;
+        grid[j][k].hasBuilding= false;
       }
     }
 
