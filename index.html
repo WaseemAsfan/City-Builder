@@ -12,8 +12,8 @@ noisy colors but the donut texture is nice in my opinion).-->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Silkscreen:wght@700&display=swap');
-    body {
-      background: #31a7b6;
+      body {
+      background: #fda055;
       color: #ccc;
       font-family: monospace;
       display: flex;
@@ -23,6 +23,21 @@ noisy colors but the donut texture is nice in my opinion).-->
       min-height: 100vh;
       margin: 0;
     }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1800px;
+      height: 100%;
+      background: #31a7b6;
+      border-left: 15px solid #ab5934;
+      border-right: 15px solid #ab5934;
+      z-index: -1;
+    }
+
 
     .game-title {
      font-family: 'Silkscreen', monospace;
