@@ -162,6 +162,8 @@ let shademat = makeMaterial(0.3, 0.7, 0.4, 10);
 let railingtex = "textures/railingtex.png";
 
 let roadtex = "textures/road.png";
+let road2tex = "textures/road2.png";
+let road3tex = "textures/road3.png";
 let roadmat = makeMaterial(0.3, 0.6, 0.1, 4);
 
 let venttex = "textures/venttex.png";
@@ -705,14 +707,17 @@ function createRoad(){
     let roadgeom = addGeometry(makePrism(1.0, 0.05, 1,0,0), roadtex, roadtex, roadmat, 10);
     let road = createNode((gl) => drawfunc(gl, roadgeom), roadgeom);
 
-    // let sidegeom = addGeometry(makePrism(0.1, 0.075, 1,0,0,0), stonetex, stonetex, stonemat, 3);
-    // let right = createNode((gl) => drawfunc(gl, sidegeom), sidegeom);
-    // right.translation = [0.45, 0.0125, 0];
-    // let left = createNode((gl) => drawfunc(gl, sidegeom), sidegeom);
-    // left.translation = [-0.45, 0.0125, 0];
+    return road
+}
+function createRoad2(){
+    let roadgeom = addGeometry(makePrism(1.0, 0.05, 1,0,0), road2tex, road2tex, roadmat, 10);
+    let road = createNode((gl) => drawfunc(gl, roadgeom), roadgeom);
 
-    // addChild(road, right);
-    // addChild(road, left);
+    return road
+}
+function createRoad3(){
+    let roadgeom = addGeometry(makePrism(1.0, 0.05, 1,0,0), road3tex, road3tex, roadmat, 10);
+    let road = createNode((gl) => drawfunc(gl, roadgeom), roadgeom);
     return road
 }
 
