@@ -68,6 +68,14 @@ noisy colors but the donut texture is nice in my opinion).-->
     canvas {
       border: 10px solid #237070;
     }
+
+    .text-center{
+      font-family: 'Silkscreen', monospace;
+      font-size: 14px;
+      border: 4px solid #000;
+      box-shadow: 4px 4px 0px #000;
+      text-transform: uppercase;
+    }
     
     .btn {
       font-family: 'Silkscreen', monospace;
@@ -127,6 +135,10 @@ noisy colors but the donut texture is nice in my opinion).-->
       <button id = "exitBtn" class="btn btn-danger btn-lg">Exit</button>
     </div>
   </div>
+
+  <div id = 'score-div' class="text-center my-4">
+  <h3>Score: <span class="badge bg-secondary" id="score-display">0</span></h3>
+</div>
 
   <!-- Vertex shader -->
 <textarea id="vertEditor"></textarea>
@@ -506,6 +518,7 @@ void main() {
         }
       }
       score = 0;
+      document.getElementById('score-display').textContent = score;
       packageStatus = "none";
     });
 
@@ -1022,15 +1035,16 @@ void main() {
       max = Math.floor(max);
       return Math.floor(Math.random() * (max-min+1)+min);
     }
-    let cube = addGeometry(makePrism(1,0.1,1,0,0,0), "textures/grid.png", "textures/grid.png", makeMaterial(0.3, 0.7, 0.5, 50), 0);
-    
-    let testCube = addGeometry(makePrism(0.05,5.0,0.05, 0,0,0), "textures/white.jpg", "textures/white.jpg", makeMaterial(0.8, 1, 1, 1), 0);
+    let cbox = addGeometry(makePrism(0.1,0.1,0.1,0,0,0), "textures/box.png", "textures/grid.png", makeMaterial(0.3, 0.7, 0.2, 5), 0);
+    let package = createNode((gl) => drawfunc(gl, cbox), cbox);
+    package.translation[1] = 0.05 - 2.5;
+    let testCube = addGeometry(makePrism(0.05,5.0,0.05, 0,0,0), "textures/bluebeam.png", "textures/white.jpg", makeMaterial(0.8, 1, 0, 1), 0);
     tcube = createNode((gl) => drawfunc(gl, testCube), testCube);
-    testCube.texture = initTexture("textures/red.png");
-    destBeam = createNode((gl) => drawfunc(gl, testCube), testCube);
+    let testCube2 = addGeometry(makePrism(0.05,5.0,0.05, 0,0,0), "textures/redbeam.png", "textures/white.jpg", makeMaterial(0.8, 1, 0, 1), 0);
+    destBeam = createNode((gl) => drawfunc(gl, testCube2), testCube2);
     tcube.translation[1] = 2.5;
     destBeam.translation[1] = 2.5;
-    
+    addChild(tcube, package);
     
     //======================================= Person =====================================================================
     const characterGeometries = initializeCharacterGeometries(addGeometry, makeMaterial);
@@ -1310,6 +1324,7 @@ void main() {
             locationmatrix[14] > deliveryMinZ && locationmatrix[14] < deliveryMaxZ){
               grid[deliveryGridCoords[0]][deliveryGridCoords[1]].texture = unselectedTex;
               score ++;
+              document.getElementById('score-display').textContent = score;
               console.log("score: ",score);
               packageStatus = "none";
           }
