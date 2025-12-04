@@ -229,10 +229,10 @@ function createbuilding1Model() {
     let door2 = makeDoor(0.5, 0.5);
     door2.translation = [0,-0.55,-0.5];
 
-    let stair1 = makeStairs(1);
+    let stair1 = makeStairs(0.95);
     stair1.translation = [0,-0.9,0.525];
 
-    let stair2 = makeStairs(1);
+    let stair2 = makeStairs(0.95);
     stair2.rotation = [0, Math.PI, 0];
     stair2.translation = [0,-0.9,-0.525];
 
@@ -376,10 +376,10 @@ function createbuilding2Model() {
     let door2 = makeDoor(0.5, 0.5);
     door2.translation = [0,-0.55,-0.5];
 
-    let stair1 = makeStairs(1);
+    let stair1 = makeStairs(0.95);
     stair1.translation = [0,-0.9,0.525];
 
-    let stair2 = makeStairs(1);
+    let stair2 = makeStairs(0.95);
     stair2.rotation = [0, Math.PI, 0];
     stair2.translation = [0,-0.9,-0.525];
 
@@ -469,10 +469,10 @@ function createbuilding3Model() {
     let door2 = makeDoor(0.5, 0.5);
     door2.translation = [0,-0.05,-0.5];
 
-    let stair1 = makeStairs(1);
+    let stair1 = makeStairs(0.95);
     stair1.translation = [0,-0.4,0.525];
 
-    let stair2 = makeStairs(1);
+    let stair2 = makeStairs(0.95);
     stair2.rotation = [0, Math.PI, 0];
     stair2.translation = [0,-0.4,-0.525];
 
@@ -553,10 +553,10 @@ function createbuilding4Model() {
     let door2 = makeDoor(0.5, 0.5);
     door2.translation = [0,-0.05,-0.5];
 
-    let stair1 = makeStairs(2);
+    let stair1 = makeStairs(1.95);
     stair1.translation = [0,-0.4,0.525];
 
-    let stair2 = makeStairs(2);
+    let stair2 = makeStairs(1.95);
     stair2.rotation = [0, Math.PI, 0];
     stair2.translation = [0,-0.4,-0.525];
 
