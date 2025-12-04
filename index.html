@@ -382,7 +382,6 @@ void main() {
         grid[j][k] = addTile(makePrism(1.0, 0.1, 1.0, 1.0, 1.0, 1.0), unselectedTex, blankBumpTex, makeMaterial(1.0, 0.0, 0.0, 5), 0);
         grid[j][k].isSelected = false;
         grid[j][k].hasBuilding = false;
-        grid[j][k].highlight = false;
       }
     }
     
@@ -403,6 +402,13 @@ void main() {
 
     let currentMode = 'none'; // 'none', 'draw', or 'erase'
     let worldMode = "gridView"; // 'gridView', 'cityView', or 'personView'
+    let buildingTiles =[];
+    let packageStatus = "none"; // 'none', 'waiting', 'picked', or 'received'
+    let packagePosition = 0;
+    let packageGridCoords = [0,0];
+    let deliveryPosition = 0;
+    let deliveryGridCoords= 0;
+    let score = 0;
 
     
     drawBtn.addEventListener('click', function() {
@@ -490,6 +496,17 @@ void main() {
 
       cubeRotX = 5 * Math.PI/180, cubeRotY = 0;
       camX = 0, camY = -0.35, camZ = -0.7;
+      buildingTiles = [];
+      for(let i=0; i<gridSize; i++){
+        for(let j=0; j<gridSize; j++){
+          if(grid[i][j].hasBuilding){
+            let t = {row: i, col: j, hasPackage: false};
+            buildingTiles.push(t);
+          }
+        }
+      }
+      score = 0;
+      packageStatus = "none";
     });
 
     camBtn.addEventListener('click',function(){
@@ -517,6 +534,7 @@ void main() {
       movy = 0; 
       movz = 0;
       inverseRotation = mat4Identity();
+      forward = false, backward= false, left= false, right= false;
     });
 
     // Mouse and keyboard interactions
@@ -567,9 +585,9 @@ void main() {
             right = true;
           } break;
         case 'ArrowDown': if(worldMode == "gridView"){
-          if(gridCol-1 >= 0 && worldMode == "gridView"){
-            gridCol--;
-            if(gridRow != personRow || gridCol != personCol){
+          if(gridRow != personRow || gridCol-1 != personCol){
+            if(gridCol-1 >= 0 && worldMode == "gridView"){
+              gridCol--;
               if(selecting == "selecting"){
                 grid[gridRow][gridCol].isSelected = true;
               }
@@ -583,9 +601,9 @@ void main() {
           camY += step;
         } break;
         case 'ArrowUp': if(worldMode == "gridView"){
-          if(gridCol+1 < gridSize){
-            gridCol++;
-            if(gridRow != personRow || gridCol != personCol){
+          if(gridRow != personRow || gridCol+1 != personCol){
+            if(gridCol+1 < gridSize){
+              gridCol++;
               if(selecting == "selecting"){
                 grid[gridRow][gridCol].isSelected = true;
               }
@@ -599,9 +617,9 @@ void main() {
           camY -= step;
         } break;
         case 'ArrowRight': if(worldMode == "gridView"){
-          if(gridRow-1 >= 0 && worldMode == "gridView"){
-            gridRow--; 
-            if(gridRow != personRow || gridCol != personCol){
+          if(gridRow-1 != personRow || gridCol != personCol){
+            if(gridRow-1 >= 0 && worldMode == "gridView"){
+              gridRow--; 
               if(selecting == "selecting"){
                 grid[gridRow][gridCol].isSelected = true;
               }
@@ -618,9 +636,9 @@ void main() {
           camZ += step;
         }break;
         case 'ArrowLeft': if(worldMode == "gridView"){
-          if(gridRow+1 < gridSize && worldMode == "gridView"){
-            gridRow++;
-            if(gridRow != personRow || gridCol != personCol){
+          if(gridRow+1 != personRow || gridCol != personCol){
+            if(gridRow+1 < gridSize && worldMode == "gridView"){
+              gridRow++;
               if(selecting == "selecting"){
                 grid[gridRow][gridCol].isSelected = true;
               }
@@ -949,6 +967,7 @@ void main() {
               }
             }
           }
+          /*
           else if (!grid[i][j].isSelected){
             let road = createRoad();
             if(j-1 < 0 || j + 1 >= gridSize ){
@@ -963,7 +982,7 @@ void main() {
               }
             }
             city.push(road);
-          }
+          }*/
         }
       }
 
@@ -997,9 +1016,22 @@ void main() {
       }
       return false;
     }
+    
+    function getRandomInt(min, max){
+      min = Math.ceil(min);
+      max = Math.floor(max);
+      return Math.floor(Math.random() * (max-min+1)+min);
+    }
     let cube = addGeometry(makePrism(1,0.1,1,0,0,0), "textures/grid.png", "textures/grid.png", makeMaterial(0.3, 0.7, 0.5, 50), 0);
     
-    let testCube = addGeometry(makePrism(0.3,0.3,0.3, 0,0,0), "textures/white.jpg", "textures/white.jpg", makeMaterial(1, 1, 1, 1), 0);
+    let testCube = addGeometry(makePrism(0.05,5.0,0.05, 0,0,0), "textures/white.jpg", "textures/white.jpg", makeMaterial(0.8, 1, 1, 1), 0);
+    tcube = createNode((gl) => drawfunc(gl, testCube), testCube);
+    testCube.texture = initTexture("textures/red.png");
+    destBeam = createNode((gl) => drawfunc(gl, testCube), testCube);
+    tcube.translation[1] = 2.5;
+    destBeam.translation[1] = 2.5;
+    
+    
     //======================================= Person =====================================================================
     const characterGeometries = initializeCharacterGeometries(addGeometry, makeMaterial);
     const characterRoot = createCharacterModel(characterGeometries, drawfunc);
@@ -1025,8 +1057,8 @@ void main() {
       ];
     }
 
-    let inverseRotation = mat4Identity();
 
+    let inverseRotation = mat4Identity();
     function render() {
       
       gl.enable(gl.DEPTH_TEST);
@@ -1085,7 +1117,6 @@ void main() {
             }
           }
           else if(grid[j][k].isSelected) grid[j][k].texture = selectedTex;
-          else if(grid[j][k].highlight) grid[j][k].texture = selectedTex;
           else grid[j][k].texture = unselectedTex;
           grid[j][k].transformations = multiplyMat4(modelTransformationMatrix, mat4Translate(mat4Identity(), [Math.floor(gridSize/2) - j, -0.05, Math.floor(gridSize/2) - k]));
           drawStrayFunc(gl, grid[j][k]);
@@ -1177,15 +1208,114 @@ void main() {
       baseH.translation[1] = 0.025;
       drawNode(gl, baseH, modelTransformationMatrix);
 
-      testCube.transformations = multiplyMat4(modelTransformationMatrix, mat4Translate(mat4Identity(), [locationmatrix[12],locationmatrix[13],locationmatrix[14]]));
-      // inBuilding(testCube.transformations[12], testCube.transformations[1])
-      if(worldMode == "peronsView"){
-        let tmpj = Math.round(Math.floor(gridSize/2) + locationmatrix[12]);
-        let tmpk = Math.round(Math.floor(gridSize/2) + locationmatrix[14]);
-        if(tmpj >= 0 && tmpj)
-        grid[tmpj][tmpk].highlight = true;
+
+      let numBuildings = buildingTiles.length;
+      if(worldMode == "personView"){
+        if(packageStatus == "none"){
+          let randomi = getRandomInt(0, numBuildings-1);
+          let r = buildingTiles[randomi].row;
+          let c = buildingTiles[randomi].col;
+          let tmp = Math.floor(gridSize/2);
+          let randdir = getRandomInt(1,4);
+          if(randdir == 1 && r+1 < gridSize){
+            if(!grid[r + 1][c].hasBuilding){
+              packagePosition = [tmp - (r+1), 2, tmp-c];
+              packageGridCoords = [r+1, c];
+              packageStatus = "waiting"
+            }
+          }
+          else if(randdir == 2 && r-1 >= 0){
+            if(!grid[r - 1][c].hasBuilding){
+              packagePosition = [tmp - (r-1), 2, tmp-c];
+              packageGridCoords = [r-1, c];
+              packageStatus = "waiting"
+            }
+          }
+          else if(randdir == 3 && c+1 < gridSize){
+            if(!grid[r][c + 1].hasBuilding){
+              packagePosition = [tmp - r, 2, tmp-(c+1)];
+              packageGridCoords = [r, c+1];
+              packageStatus = "waiting"
+            }
+          }
+          else if(randdir == 4 && c-1 >= 0){
+            if(!grid[r][c - 1].hasBuilding){
+              packagePosition = [tmp - r, 2, tmp-(c-1)];
+              packageGridCoords = [r, c-1];
+              packageStatus = "waiting"
+            }
+          }
+        }
+        else if(packageStatus == "waiting" && packagePosition){
+          grid[packageGridCoords[0]][packageGridCoords[1]].texture = selectedHoveredTex;
+          movePackage(tcube, packagePosition[0], packagePosition[2]);
+          drawNode(gl, tcube, modelTransformationMatrix);
+          
+          let packageMinX = packagePosition[0] - 0.5;
+          let packageMaxX = packagePosition[0] + 0.5;
+          let packageMinZ = packagePosition[2] - 0.5;
+          let packageMaxZ = packagePosition[2] + 0.5;
+
+          if(locationmatrix[12] > packageMinX && locationmatrix[12] < packageMaxX &&
+            locationmatrix[14] > packageMinZ && locationmatrix[14] < packageMaxZ){
+              grid[packageGridCoords[0]][packageGridCoords[1]].texture = unselectedTex;
+
+              let randomi = getRandomInt(0, numBuildings-1);
+              let r = buildingTiles[randomi].row;
+              let c = buildingTiles[randomi].col;
+              let tmp = Math.floor(gridSize/2);
+              let randdir = getRandomInt(1,4);
+              let deliveryPosFound = false;
+              if(randdir == 1 && r+1 < gridSize){
+                if(!grid[r + 1][c].hasBuilding){
+                  deliveryPosition = [tmp - (r+1), 2, tmp-c];
+                  deliveryGridCoords = [r+1, c];
+                  deliveryPosFound = true;
+                }
+              }
+              else if(randdir == 2 && r-1 >= 0){
+                if(!grid[r - 1][c].hasBuilding){
+                  deliveryPosition = [tmp - (r-1), 2, tmp-c];
+                  deliveryGridCoords = [r-1, c];
+                  deliveryPosFound = true;
+                }
+              }
+              else if(randdir == 3 && c+1 < gridSize){
+                if(!grid[r][c + 1].hasBuilding){
+                  deliveryPosition = [tmp - r, 2, tmp-(c+1)];
+                  deliveryGridCoords = [r, c+1];
+                  deliveryPosFound = true;
+                }
+              }
+              else if(randdir == 4 && c-1 >= 0){
+                if(!grid[r][c - 1].hasBuilding){
+                  deliveryPosition = [tmp - r, 2, tmp-(c-1)];
+                  deliveryGridCoords = [r, c-1];
+                  deliveryPosFound = true;
+                }
+              }
+              if(deliveryPosFound) packageStatus = "picked";
+          }
+        }
+        else if(packageStatus == "picked"){
+          grid[deliveryGridCoords[0]][deliveryGridCoords[1]].texture = selectedEraseTex;
+          movePackage(destBeam, deliveryPosition[0], deliveryPosition[2]);
+          drawNode(gl, destBeam, modelTransformationMatrix);
+
+          let deliveryMinX = deliveryPosition[0] - 0.5;
+          let deliveryMaxX = deliveryPosition[0] + 0.5;
+          let deliveryMinZ = deliveryPosition[2] - 0.5;
+          let deliveryMaxZ = deliveryPosition[2] + 0.5;
+          if(locationmatrix[12] > deliveryMinX && locationmatrix[12] < deliveryMaxX &&
+            locationmatrix[14] > deliveryMinZ && locationmatrix[14] < deliveryMaxZ){
+              grid[deliveryGridCoords[0]][deliveryGridCoords[1]].texture = unselectedTex;
+              score ++;
+              console.log("score: ",score);
+              packageStatus = "none";
+          }
+        }
       }
-      // drawStrayFunc(gl,testCube);
+
     }
 
     // Initialize when page loads

@@ -737,3 +737,9 @@ function moveBuilding(building,type, row, col, rotation){
     building.translation[2] += col;
     
 }
+
+function movePackage(building, row, col){
+    building.translation[0] = row;
+    building.translation[2] = col;
+    
+}
