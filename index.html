@@ -331,7 +331,7 @@ void main() {
 
     const textureCache = {};
 
-    function initTexture(url){
+    function initTexture(url, maxSize = 1024){
       // Return cached texture if it exists
       if (textureCache[url]) {
         return textureCache[url];
@@ -345,8 +345,29 @@ void main() {
       const image = new Image();
       image.src = url;
       image.onload = function() {
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        // Resize if too large
+        let width = image.width;
+        let height = image.height;
+        
+        if (width > maxSize || height > maxSize) {
+          const scale = maxSize / Math.max(width, height);
+          width = Math.floor(width * scale);
+          height = Math.floor(height * scale);
+          
+          // Create canvas to resize
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(image, 0, 0, width, height);
+          
+          gl.bindTexture(gl.TEXTURE_2D, texture);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, canvas);
+        } else {
+          gl.bindTexture(gl.TEXTURE_2D, texture);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        }
+        
         gl.generateMipmap(gl.TEXTURE_2D);
       }
       
@@ -1110,6 +1131,28 @@ void main() {
       max = Math.floor(max);
       return Math.floor(Math.random() * (max-min+1)+min);
     }
+    initTexture("textures/road.png");
+    initTexture("textures/road2.png");
+    initTexture("textures/road3.png");
+    initTexture("textures/road4.png");
+    initTexture("textures/grid.png");
+    initTexture("textures/graybuild.png");
+    initTexture("textures/greenbuild.png");
+    initTexture("textures/purplebuild.png");
+    initTexture("textures/redbuild.png");
+    initTexture("textures/bluebuild.png");
+    initTexture("textures/stone.png");
+    initTexture("textures/sign.png");
+    initTexture("textures/railingtex.png");
+    initTexture("textures/Actex.png");
+    initTexture("textures/blueshade.png");
+    initTexture("textures/greenshade.png");
+    initTexture("textures/redshade.png");
+    initTexture("textures/purpleshade.png");
+    initTexture("textures/orangeshade.png");
+    initTexture("textures/flackwall.png");
+    initTexture("textures/bricktex.png");
+    initTexture("textures/bushtex.png");
     let cbox = addGeometry(makePrism(0.1,0.1,0.1,0,0,0), "textures/box.png", "textures/grid.png", makeMaterial(0.3, 0.7, 0.2, 5), 0);
     let package = createNode((gl) => drawfunc(gl, cbox), cbox);
     package.translation[1] = 0.05 - 2.5;
