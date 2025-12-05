@@ -457,7 +457,7 @@ void main() {
     }
 
 
-    let plane = addGeometry( makePlane(10,10,10,1,0,0), "textures/grid.png", "textures/white.jpg", makeMaterial(0.3, 0.5, 0.95, 40), 0);
+    let plane = addGeometry( makePlane(10,10,10,1,0,0), "textures/plane.png", "textures/white.jpg", makeMaterial(0.3, 0.5, 0.95, 40), 0);
     // plane.transformations = mat4RotateX(mat4Identity(), 90 * Math.PI/180);
     const characterGeometries = initializeCharacterGeometries(addGeometry, makeMaterial);
     const characterRoot = createCharacterModel(characterGeometries, drawfunc);
@@ -688,10 +688,10 @@ void main() {
         // characterRoot.translation = [0,0,0];
       }
 
-      // plane.transformations = multiplyMat4(modelTransformationMatrix, mat4RotateX(mat4Identity(), -90 * Math.PI/180));
+      plane.transformations = multiplyMat4(modelTransformationMatrix, mat4RotateX(mat4Identity(), -90 * Math.PI/180));
       tracker.transformations = multiplyMat4(modelTransformationMatrix, locationmatrix);
       // drawStrayFunc(gl, tracker);
-      // drawStrayFunc(gl, plane);
+      drawStrayFunc(gl, plane);
       // gl.uniformMatrix4fv(uMTM, false, multiplyMat4(mat4RotateX(mat4Identity(), 90 * Math.PI/180)));
 
       characterRoot.translation[1] = 0.53;
