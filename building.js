@@ -1,3 +1,5 @@
+//file is responsible for all of the building creation code. It makes 4 building in 4 of the different functions and makes the roads in  another 4 functions
+
 function addChild(parent, child) {
     parent.children.push(child);
 }

@@ -1,3 +1,5 @@
+// responsible for conbstructing the person's heirachy
+
 function addChild(parent, child) {
     parent.children.push(child);
 }

@@ -1,14 +1,11 @@
-<!--All of the objects in the scene have a texture and a bumpmap.
-However the olny object in the scene where the bumpmap in not just a
-white image is the wall and the donut. The smoke is an animated texture on a plane geometry.
-I drew many of the texture myself including the donut texture (most are just 
-noisy colors but the donut texture is nice in my opinion).-->
+<!-- This files was originally used to design the person and make him walk around
+ It can now be used to see a demo of just the person code -->
 <!DOCTYPE html>
 <html>
 
 <head>
   <meta charset="utf-8">
-  <title>UNM CS 412/512 HW5</title>
+  <title>UNM CS 412/512 Final Person</title>
   <style>
     body {
       background: #111;
@@ -31,10 +28,11 @@ noisy colors but the donut texture is nice in my opinion).-->
 </head>
 
 <body>
-  <h2>Donut And Coffee</h2>
+  <h2>Person Demo</h2>
   <p>Edit vertex and fragment shaders on the left to get the result instantly.<br>
   Use mouse to drag and rotate the cube. <br>
   Use arrow keys and w, s keys to move the camera.<br>
+  Use the e/a/f keys to make the person walk around.
   </p>
 
   <div style="display: flex; gap: 10px; align-items: flex-start;">
@@ -503,7 +501,7 @@ void main() {
         left = false;
       }
 
-      // // Optional: stop walking animation on any arrow release
+      // stop walking animation on any arrow release
       if (['e','d','f','a'].includes(e.key)) {
         startWalk = false;
       }
@@ -532,50 +530,6 @@ void main() {
 
     let inverseRotation = mat4Identity();
 
-    // const building1 = createbuilding1Model();
-    // const building2 = createbuilding2Model();
-    // building2.translation = [2.5,0,0];
-    // const road = createRoad();
-    // road.rotation = [0, Math.PI/2, 0];
-    // road.translation = [0, 0.05,2.25];
-    // const road2 = createRoad();
-    // road2.rotation = [0, Math.PI/2, 0];
-    // road2.translation = [2.5,0.05,2.25];
-
-    // const building3 = createbuilding3Model();
-    // const building4 = createbuilding4Model();
-    // building3.translation[0] = [-2.5];
-    // const road3 = createRoad();
-    // road3.rotation = [0, Math.PI/2, 0];
-    // road3.translation = [-2.5,0.05,2.25];
-
-    // building4.translation[0] = [6.5];
-    // const road4 = createRoad();
-    // road4.rotation = [0, Math.PI/2, 0];
-    // road4.translation = [6.5,0.05,2.25];
-
-    // building1.scale = [2.25,2.25, 2.25];
-    // building2.scale = [2.25,2.25, 2.25];
-    // building3.scale = [2.25,2.25, 2.25];
-    // building4.scale = [2.25,2.25, 2.25];
-    // road.scale = [2.25,2.25,2.25];
-    // road2.scale = [2.25,2.25,2.25];
-    // road3.scale = [2.25,2.25,2.25];
-    // road4.scale = [2.25,2.25,2.25];
-
-    // building1.translation[1] += 2.25;
-    // building2.translation[1] += 2.25;
-    // building3.translation[1] += 1.625;
-    // building4.translation[1] += 1.625;
-
-    // building1.translation[2] -= 2.25;
-    // building2.translation[2] -= 2.25;
-    // building3.translation[2] -= 2.25;
-    // building4.translation[2] -= 2.25;
-    // road.translation[2] -= 2.25;
-    // road2.translation[2] -= 2.25;
-    // road3.translation[2] -= 2.25;
-    // road4.translation[2] -= 2.25;
 
     function render() {
       
@@ -696,17 +650,6 @@ void main() {
 
       characterRoot.translation[1] = 0.53;
       drawNode(gl, baseH, modelTransformationMatrix);
-
-      // drawNode(gl, building1, modelTransformationMatrix);
-      // drawNode(gl, road, modelTransformationMatrix);
-      // drawNode(gl, building2, modelTransformationMatrix);
-      // drawNode(gl, road2, modelTransformationMatrix);
-      // drawNode(gl, building2, modelTransformationMatrix);
-      // drawNode(gl, road3, modelTransformationMatrix);
-      // drawNode(gl, building3, modelTransformationMatrix);
-      // drawNode(gl, road4, modelTransformationMatrix);
-      // drawNode(gl, building4, modelTransformationMatrix);
-      
     }
 
     // Initialize when page loads

@@ -128,24 +128,21 @@ noisy colors but the donut texture is nice in my opinion).-->
 <body>
   <h1 class="game-title">CITY BUILDER</h1>
   <p class="subtitle">
-    MOUSE TO ROTATE | ARROW KEYS + W/S TO MOVE
+    GRID VIEW: MOUSE TO ROTATE | ARROW KEYS TO MOVE | W/S TO ZOOM <br>
+    CITY VIEW: MOUSE TO ROTATE | ARROW KEYS TO MOVE CAMERA| W/S TO ZOOM <br>
+    PERSON VIEW: MOUSE TO ROTATE | ARROW KEYS TO MOVE CAMERA AND ZOOM | W/A/S/D TO MOVE
   </p>
 
   <div style="display: flex; gap: 30px; align-items: center;">
-    <!-- Left Buttons -->
     <div class="button-panel">
       <button id = "strtBtn" class="btn btn-success btn-lg">Start Game</button>
       <button id = "loadBtn" class="btn btn-primary btn-lg">Load City</button>
       <button id = "resetDrawBtn" class="btn btn-danger btn-lg">Reset</button>
       <button id = "resetCamBtn" class="btn btn-dark btn-lg">Reset Camera</button>
     </div>
-
-    <!-- Canvas -->
     <div>
       <canvas id="glcanvas" width="1000" height="1000"></canvas>
     </div>
-
-    <!-- Right Buttons -->
     <div class="button-panel">
       <button id = "unloadBtn" class="btn btn-info btn-lg">Unload City</button>
       <button id = "drawBtn" class="btn btn-warning btn-lg">Draw</button>
@@ -329,7 +326,7 @@ void main() {
       };
     }
 
-    const textureCache = {};
+    const textureCache = {}; // stores all of the seen textures
 
     function initTexture(url, maxSize = 1024){
       // Return cached texture if it exists
@@ -415,6 +412,7 @@ void main() {
     let checkForSelection = false;
     let selecting = "none";
 
+    //creates the grid
     const unselectedTex = initTexture("textures/tile_blank.png");
     const selectedTex = initTexture("textures/tile_selected.png");
     const hoveredTex = initTexture("textures/tile_hover.png");
@@ -437,6 +435,7 @@ void main() {
     }
     
     
+    //sets up tyhe buttons
     const drawBtn = document.getElementById('drawBtn');
     const eraseBtn = document.getElementById('eraseBtn');
     const resetBtn = document.getElementById('resetDrawBtn');
@@ -545,6 +544,7 @@ void main() {
       camBtn.style.display = "block";
       exitBtn.style.display = "block";
 
+      //resets the camera
       cubeRotX = 5 * Math.PI/180, cubeRotY = 0;
       camX = 0, camY = -0.35, camZ = -0.7;
       buildingTiles = [];
@@ -561,6 +561,7 @@ void main() {
       packageStatus = "none";
     });
 
+    //resets the camera
     camBtn.addEventListener('click',function(){
       cubeRotX = 5 * Math.PI/180, cubeRotY = 0;
       camX = 0, camY = -0.35, camZ = -0.7;
@@ -573,6 +574,7 @@ void main() {
 
       startBtn.style.display = "block";
       unloadBtn.style.display = "block";
+      //resets the camera and the player
       cubeRotX = 10 * Math.PI/180, cubeRotY = 0;
       camX = 0, camY = -0.72, camZ = -20;
 
@@ -720,7 +722,7 @@ void main() {
         left = false;
       }
 
-      // // Optional: stop walking animation on any arrow release
+      //stop walking animation on any arrow release
       if (['w','a','s','d'].includes(e.key)) {
         startWalk = false;
       }
@@ -745,7 +747,7 @@ void main() {
 
     let startTime = Date.now();
 
-    
+    // function to make it easier to add a geometry to the scene
     function addGeometry(shape, texUrl, bumpUrl, material, bumpStrength){
       let buffs = initBuffers(shape);
       let texture = initTexture(texUrl);
@@ -775,6 +777,7 @@ void main() {
       };
     };
 
+    //heirachical structure node
     function createNode(drawFunc, shapeGeometry) {
       let node = {
         translation: [0, 0, 0],
@@ -793,6 +796,7 @@ void main() {
       parent.children.push(child);
     }
 
+    // add a tile geometry to scene
     function addTile(shape, texture, bumpTexture, material, bumpStrength){
       let buffs = initBuffers(shape);
       count ++;
@@ -825,8 +829,8 @@ void main() {
         drawNode(gl, child, worldMatrix);
     }
     
+    //drawfunction for geomitries in heirachy
     function drawfunc(gl, shapeGeometry){
-      // let i = shapeGeometry.textcount;
       i = 0
       gl.uniform1f(uKaLoc, shapeGeometry.material.ka);
       gl.uniform1f(uKdLoc, shapeGeometry.material.kd);
@@ -863,6 +867,7 @@ void main() {
       gl.drawElements(gl.TRIANGLES, shapeGeometry.indicelen, gl.UNSIGNED_SHORT, 0);
     }
 
+    //drawfunction for geomitries in not in heirachy
     function drawStrayFunc(gl, shapeGeometry){
       let i = 0 ;
       gl.uniform1f(uKaLoc, shapeGeometry.material.ka);
@@ -900,6 +905,7 @@ void main() {
       gl.drawElements(gl.TRIANGLES, shapeGeometry.indicelen, gl.UNSIGNED_SHORT, 0);
     }
 
+    //generates the randoom city in the correct positions
     function loadCity(){
       // console.log("loading city");
       let tmp = Math.floor(gridSize/2);
@@ -1096,6 +1102,7 @@ void main() {
       }
 
     }
+    //clears the city
     function resetCity(){
       city =[];
       for(let i = 0; i < gridSize; i++){
@@ -1105,10 +1112,9 @@ void main() {
       }
     }
 
+    //figures out if the position in where a building is
     function inBuilding(x,y){
       let tmp = Math.floor(gridSize/2);
-      // x = x-tmp;
-      // y = y-tmp;
       for(let i=0; i < gridSize; i++){
         for(let j =0; j<gridSize; j++){
           if(grid[i][j].hasBuilding){
@@ -1117,7 +1123,6 @@ void main() {
             let ymin = tmp - j - 0.6;
             let ymax = tmp - j + 0.6;
             if((xmin < x && xmax > x) && (ymin < y && ymax > y)){
-              // console.log("in building");
               return true;
             }
           }
@@ -1131,6 +1136,8 @@ void main() {
       max = Math.floor(max);
       return Math.floor(Math.random() * (max-min+1)+min);
     }
+
+    //preload some textures on startup
     initTexture("textures/road.png");
     initTexture("textures/road2.png");
     initTexture("textures/road3.png");
@@ -1237,6 +1244,7 @@ void main() {
       gl.uniform3fv(uLightBPosLoc, [-10,10,-10]);
       gl.uniform3fv(uViewPosLoc, [0.0, 0.0, 0.0]);
 
+      //draw grid
       for(let j=0; j<gridSize; j++){
         for(let k=0; k<gridSize; k++){
           if(j==gridRow && k==gridCol && worldMode == "gridView"){
